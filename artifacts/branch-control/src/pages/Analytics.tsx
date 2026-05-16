@@ -169,79 +169,87 @@ export default function Analytics() {
         <div className="flex items-start justify-between mb-5">
           <div>
             <h3 className="font-black text-foreground">Branch × Day Sales Heatmap</h3>
-            <p className="text-sm text-muted-foreground">Darker green = stronger sales day</p>
+            <p className="text-sm text-muted-foreground">Red = hottest sales · Blue = lowest</p>
           </div>
           {hoveredCell && (
             <div className="text-right">
               <p className="text-xs font-black text-foreground">{hoveredCell.branch} · {hoveredCell.day}</p>
-              <p className="text-lg font-black text-emerald-600">{GHS(hoveredCell.value)}</p>
+              <p className="text-lg font-black" style={{ color: heatColor(globalMax > 0 ? hoveredCell.value / globalMax : 0).bg }}>
+                {GHS(hoveredCell.value)}
+              </p>
             </div>
           )}
         </div>
 
         {weeklyLoading ? (
-          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full border-separate border-spacing-1.5">
-                <thead>
-                  <tr>
-                    <th className="w-24" />
-                    {(weekly?.days ?? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]).map(d => (
-                      <th key={d} className="text-center text-xs font-black uppercase tracking-widest text-muted-foreground pb-1 px-1">
-                        {d}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(weekly?.branches ?? []).map(b => (
-                    <tr key={b.branch}>
-                      <td className="text-xs font-black text-foreground pr-3 whitespace-nowrap">{b.branch}</td>
-                      {b.data.map((v, i) => {
-                        const intensity = globalMax > 0 ? v / globalMax : 0;
-                        const { bg, text } = heatColor(intensity);
-                        const day = weekly?.days[i] ?? `D${i + 1}`;
-                        return (
-                          <td key={i} className="p-0">
+          <div className="flex gap-5">
+            {/* Heatmap bands */}
+            <div className="flex-1 space-y-3">
+              {/* Day labels */}
+              <div className="flex">
+                <div className="w-20 shrink-0" />
+                <div className="flex-1 grid grid-cols-7">
+                  {(weekly?.days ?? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]).map(d => (
+                    <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">{d}</div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Branch rows — smooth gradient bands */}
+              {(weekly?.branches ?? []).map(b => {
+                const colors = b.data.map(v => heatColor(globalMax > 0 ? v / globalMax : 0).bg);
+                const gradient = `linear-gradient(to right, ${colors.join(", ")})`;
+                return (
+                  <div key={b.branch} className="flex items-center gap-0">
+                    <div className="w-20 shrink-0 text-xs font-black text-foreground pr-3 text-right">{b.branch}</div>
+                    <div className="flex-1 relative">
+                      {/* Smooth gradient bar */}
+                      <div
+                        className="h-14 rounded-2xl w-full"
+                        style={{ background: gradient }}
+                      />
+                      {/* Day dividers + hover targets */}
+                      <div className="absolute inset-0 grid grid-cols-7">
+                        {b.data.map((v, i) => {
+                          const day = weekly?.days[i] ?? `D${i+1}`;
+                          const intensity = globalMax > 0 ? v / globalMax : 0;
+                          const textCol = intensity > 0.4 ? "#ffffff" : "#1e293b";
+                          return (
                             <div
+                              key={i}
+                              className="flex items-center justify-center cursor-default h-full"
                               onMouseEnter={() => setHoveredCell({ branch: b.branch, day, value: v })}
                               onMouseLeave={() => setHoveredCell(null)}
                               title={`${b.branch} · ${day}: ${GHS(v)}`}
-                              style={{ background: bg, color: text }}
-                              className="rounded-xl h-14 flex flex-col items-center justify-center cursor-default transition-transform hover:scale-105 hover:shadow-md select-none"
                             >
-                              <span className="text-[10px] font-black opacity-70">{day}</span>
-                              <span className="text-xs font-black leading-none mt-0.5">
-                                {v > 0 ? (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v) : "—"}
+                              <span className="text-[10px] font-black select-none" style={{ color: textCol }}>
+                                {v > 0 ? (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v) : "—"}
                               </span>
                             </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Legend */}
-            <div className="mt-5 flex items-center gap-2">
-              <span className="text-xs font-bold text-muted-foreground">Low</span>
-              {[0, 0.15, 0.35, 0.55, 0.75, 1].map((v, i) => {
-                const { bg } = heatColor(v);
-                return (
-                  <div
-                    key={i}
-                    className="h-4 flex-1 rounded-md transition-all"
-                    style={{ background: bg, maxWidth: 40 }}
-                  />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-              <span className="text-xs font-bold text-muted-foreground">High</span>
             </div>
-          </>
+
+            {/* Legend sidebar */}
+            <div className="flex flex-col items-center gap-1 shrink-0 w-14 pt-6">
+              <span className="text-[10px] font-black text-muted-foreground mb-1">100%</span>
+              <div
+                className="flex-1 w-7 rounded-xl"
+                style={{
+                  background: "linear-gradient(to bottom, #ef4444, #fb923c, #fde047, #34d399, #60a5fa)",
+                  minHeight: 120
+                }}
+              />
+              <span className="text-[10px] font-black text-muted-foreground mt-1">25%</span>
+            </div>
+          </div>
         )}
       </div>
     </div>
