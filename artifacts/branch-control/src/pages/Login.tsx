@@ -274,12 +274,31 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
       </div>
 
       {/* ── Right panel ── */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+      <div className="flex-1 flex items-center justify-center p-8 bg-background relative overflow-hidden">
+
+        {/* Subtle accent glow behind the form */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            width: 600, height: 600,
+            top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)",
+            background: "radial-gradient(circle, hsl(var(--primary) / 0.06) 0%, transparent 70%)",
+            filter: "blur(40px)",
+          }}
+        />
+
+        {/* Top accent strip */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary)), transparent)" }}
+        />
+
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, type: "spring", bounce: 0.2 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md relative z-10"
         >
           <motion.div
             initial={{ opacity: 0, y: -16 }}
@@ -287,7 +306,10 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
             transition={{ delay: 0.15, duration: 0.5 }}
             className="mb-8"
           >
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2">Owner Portal</p>
+            <p
+              className="text-xs font-black uppercase tracking-widest mb-2"
+              style={{ color: "hsl(var(--primary))" }}
+            >Owner Portal</p>
             <h2 className="text-4xl font-black text-foreground">Welcome back</h2>
             <p className="text-muted-foreground text-sm mt-1">Sign in to continue to your dashboard</p>
           </motion.div>

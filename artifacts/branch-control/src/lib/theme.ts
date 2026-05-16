@@ -25,5 +25,6 @@ export function applyAccentColor(hex: string) {
   const hsl = hexToHslValues(hex);
   document.documentElement.style.setProperty("--primary", hsl);
   document.documentElement.style.setProperty("--sidebar-primary", hsl);
+  document.documentElement.style.setProperty("--sidebar-primary-foreground", "210 40% 98%");
   document.documentElement.style.setProperty("--ring", hsl);
 }
