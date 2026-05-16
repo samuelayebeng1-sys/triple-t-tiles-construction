@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { applyAllColors, applyAccentColor, applyLoginGlowColor, applyContentBarColor, applySidebarColor, applyLoginPanelBg, applyLoginRightBg, applyContentBg } from "@/lib/theme";
 
-type Page = "business" | "suppliers" | "products" | "locations" | "initialStock" | "sms" | null;
+type Page = "business" | "suppliers" | "products" | "locations" | "initialStock" | "sms" | "colours" | null;
 
 function InitialStockPanel({ products, locations, stockMap, setStockMap, onSave }: {
   products: any[];
@@ -408,9 +408,10 @@ export default function Settings() {
   ];
 
   const NAV_TILES = [
-    { id: "business" as Page,      icon: Building2,    title: "Business Profile",        desc: "Company name, logo, contact details",                   count: null },
-    { id: "sms" as Page,           icon: MessageSquare, title: "SMS & Notifications",     desc: "Alerts, sender ID and notification toggles",           count: null },
-    { id: "locations" as Page,     icon: MapPin,        title: "Branches & Warehouses",   desc: "Manage your sales branches and storage locations",      count: locations?.length ?? null },
+    { id: "colours" as Page,       icon: Palette,       title: "Interface Customisation", desc: "Colours for login, sidebar, accent and pages",          count: null },
+    { id: "business" as Page,      icon: Building2,     title: "Business Profile",        desc: "Company name, logo, contact details",                   count: null },
+    { id: "sms" as Page,           icon: MessageSquare, title: "SMS & Notifications",     desc: "Alerts, sender ID and notification toggles",            count: null },
+    { id: "locations" as Page,     icon: MapPin,        title: "Branches & Warehouses",   desc: "Manage your sales branches and storage locations",       count: locations?.length ?? null },
     { id: "suppliers" as Page,     icon: Truck,         title: "Suppliers",               desc: "Add, edit and remove your suppliers",                   count: suppliers?.length ?? null },
     { id: "products" as Page,      icon: Package,       title: "Products",                desc: "Your product catalogue with pricing",                   count: products?.length ?? null },
     { id: "initialStock" as Page,  icon: Layers,        title: "Initial Stock Setup",     desc: "Set opening stock quantities before going live",        count: null },
@@ -726,6 +727,49 @@ export default function Settings() {
               </div>
             )}
 
+            {page === "colours" && (
+              <>
+                {/* Row 1 */}
+                <div className="px-6 pb-0 pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <ColorZone label="Primary Accent" sub="Buttons, active nav item, Sign In button, right panel labels" swatches={ACCENT_SWATCHES} value={profile.accentColor} onChange={c => { setProfile(f => ({ ...f, accentColor: c })); applyAccentColor(c); }} />
+                  <ColorZone label="Login Left Panel Glow" sub="Left login portal — orbs, rotating rings, icon box glow effects" swatches={GLOW_SWATCHES} value={profile.loginGlowColor} onChange={c => { setProfile(f => ({ ...f, loginGlowColor: c })); applyLoginGlowColor(c); }} />
+                  <ColorZone label="Workspace Top Bar" sub="Thin stripe at the top of every page after login — shows on every tab" swatches={BAR_SWATCHES} value={profile.contentBarColor} onChange={c => { setProfile(f => ({ ...f, contentBarColor: c })); applyContentBarColor(c); }} />
+                </div>
+                {/* Row 2 */}
+                <div className="px-6 pb-2 pt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                  <ColorZone label="Sidebar Background" sub="Navigation sidebar — BranchControl, menu items and Sign Out" swatches={SIDEBAR_SWATCHES} value={profile.sidebarColor} onChange={c => { setProfile(f => ({ ...f, sidebarColor: c })); applySidebarColor(c); }} />
+                  <ColorZone label="Login Left Panel Background" sub="The dark background behind the orbs, rings and BranchControl icon" swatches={PANEL_SWATCHES} value={profile.loginPanelBg} onChange={c => { setProfile(f => ({ ...f, loginPanelBg: c })); applyLoginPanelBg(c); }} />
+                  <ColorZone label="Login Right Panel" sub="Background of the form side — OWNER PORTAL, fields and Sign In button" swatches={RIGHT_SWATCHES} value={profile.loginRightBg} onChange={c => { setProfile(f => ({ ...f, loginRightBg: c })); applyLoginRightBg(c); }} />
+                  <ColorZone label="Page Background" sub="Background of every page — Dashboard, Reports, Stock Search, all tabs" swatches={CONTENT_SWATCHES} value={profile.contentBg} onChange={c => { setProfile(f => ({ ...f, contentBg: c })); applyContentBg(c); }} />
+                </div>
+                {/* Live preview mini-bar */}
+                <div className="mx-6 mt-4 mb-5 rounded-xl overflow-hidden border border-border">
+                  <div className="h-1 w-full" style={{ background: profile.contentBarColor }} />
+                  <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap" style={{ background: profile.sidebarColor }}>
+                    <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: profile.loginPanelBg, border: "1px solid rgba(255,255,255,0.2)" }} />
+                    <span className="text-[10px] font-bold text-white/60">Left panel</span>
+                    <div className="h-2.5 w-2.5 rounded-full ml-2 shrink-0" style={{ background: profile.loginGlowColor }} />
+                    <span className="text-[10px] font-bold text-white/60">Glow</span>
+                    <div className="h-2.5 w-2.5 rounded-full ml-2 shrink-0" style={{ background: profile.accentColor }} />
+                    <span className="text-[10px] font-bold text-white/60">Accent</span>
+                    <div className="ml-auto flex items-center gap-2 flex-wrap">
+                      <div className="h-5 w-10 rounded shrink-0" style={{ background: profile.loginRightBg, border: "1px solid rgba(0,0,0,0.15)" }} />
+                      <span className="text-[10px] font-bold text-white/60">Right</span>
+                      <div className="h-5 w-10 rounded shrink-0" style={{ background: profile.contentBg, border: "1px solid rgba(0,0,0,0.15)" }} />
+                      <span className="text-[10px] font-bold text-white/60">Pages</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-6 pb-6">
+                  <button onClick={handleSaveInterface} disabled={updateSettings.isPending}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-8 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
+                    <Save className="h-4 w-4" />
+                    {updateSettings.isPending ? "Saving..." : "Save Interface Colours"}
+                  </button>
+                </div>
+              </>
+            )}
+
             {page === "initialStock" && (
               <InitialStockPanel
                 products={products ?? []}
@@ -746,63 +790,6 @@ export default function Settings() {
             <p className="text-sm text-muted-foreground">Configure your business, interface, products, and locations</p>
           </div>
 
-          {/* Interface Customisation — always expanded at the top */}
-          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden mb-5">
-            <div className="flex items-center gap-4 px-6 pt-6 pb-4">
-              <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "hsl(var(--primary) / 0.12)" }}>
-                <Palette className="h-5 w-5" style={{ color: "hsl(var(--primary))" }} />
-              </div>
-              <div>
-                <p className="font-black text-foreground">Interface Customisation</p>
-                <p className="text-xs text-muted-foreground">Pick a colour for each zone — changes preview live, click Save to persist</p>
-              </div>
-            </div>
-
-            {/* Row 1 */}
-            <div className="px-6 pb-0 border-t border-border pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ColorZone label="Primary Accent" sub="Buttons, active nav item, Sign In button, right panel labels" swatches={ACCENT_SWATCHES} value={profile.accentColor} onChange={c => { setProfile(f => ({ ...f, accentColor: c })); applyAccentColor(c); }} />
-              <ColorZone label="Login Left Panel Glow" sub="Left login portal — orbs, rotating rings, icon box glow effects" swatches={GLOW_SWATCHES} value={profile.loginGlowColor} onChange={c => { setProfile(f => ({ ...f, loginGlowColor: c })); applyLoginGlowColor(c); }} />
-              <ColorZone label="Workspace Top Bar" sub="Thin stripe at the top of every page after login — shows on every tab" swatches={BAR_SWATCHES} value={profile.contentBarColor} onChange={c => { setProfile(f => ({ ...f, contentBarColor: c })); applyContentBarColor(c); }} />
-            </div>
-
-            {/* Row 2 */}
-            <div className="px-6 pb-2 pt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-              <ColorZone label="Sidebar Background" sub="Navigation sidebar — BranchControl, menu items and Sign Out" swatches={SIDEBAR_SWATCHES} value={profile.sidebarColor} onChange={c => { setProfile(f => ({ ...f, sidebarColor: c })); applySidebarColor(c); }} />
-              <ColorZone label="Login Left Panel Background" sub="The dark background behind the orbs, rings and BranchControl icon" swatches={PANEL_SWATCHES} value={profile.loginPanelBg} onChange={c => { setProfile(f => ({ ...f, loginPanelBg: c })); applyLoginPanelBg(c); }} />
-              <ColorZone label="Login Right Panel" sub="Background of the form side — OWNER PORTAL, fields and Sign In button" swatches={RIGHT_SWATCHES} value={profile.loginRightBg} onChange={c => { setProfile(f => ({ ...f, loginRightBg: c })); applyLoginRightBg(c); }} />
-              <ColorZone label="Page Background" sub="Background of every page — Dashboard, Reports, Stock Search, all tabs" swatches={CONTENT_SWATCHES} value={profile.contentBg} onChange={c => { setProfile(f => ({ ...f, contentBg: c })); applyContentBg(c); }} />
-            </div>
-
-            {/* Live preview mini-bar */}
-            <div className="mx-6 mt-3 mb-5 rounded-xl overflow-hidden border border-border">
-              <div className="h-1 w-full" style={{ background: profile.contentBarColor }} />
-              <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap" style={{ background: profile.sidebarColor }}>
-                <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: profile.loginPanelBg, border: "1px solid rgba(255,255,255,0.2)" }} />
-                <span className="text-[10px] font-bold text-white/60">Left panel</span>
-                <div className="h-2.5 w-2.5 rounded-full ml-2 shrink-0" style={{ background: profile.loginGlowColor }} />
-                <span className="text-[10px] font-bold text-white/60">Glow</span>
-                <div className="h-2.5 w-2.5 rounded-full ml-2 shrink-0" style={{ background: profile.accentColor }} />
-                <span className="text-[10px] font-bold text-white/60">Accent</span>
-                <div className="ml-auto flex items-center gap-2 flex-wrap">
-                  <div className="h-5 w-10 rounded shrink-0" style={{ background: profile.loginRightBg, border: "1px solid rgba(0,0,0,0.15)" }} />
-                  <span className="text-[10px] font-bold text-white/60">Right</span>
-                  <div className="h-5 w-10 rounded shrink-0" style={{ background: profile.contentBg, border: "1px solid rgba(0,0,0,0.15)" }} />
-                  <span className="text-[10px] font-bold text-white/60">Pages</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="px-6 pb-6">
-              <button onClick={handleSaveInterface} disabled={updateSettings.isPending}
-                className="flex items-center gap-2 rounded-xl bg-primary px-8 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
-                <Save className="h-4 w-4" />
-                {updateSettings.isPending ? "Saving..." : "Save Interface Colours"}
-              </button>
-            </div>
-          </div>
-
-          {/* Navigation tiles grid */}
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Other Settings</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {NAV_TILES.map(({ id, icon: Icon, title, desc, count }) => (
               <button
@@ -810,7 +797,7 @@ export default function Settings() {
                 onClick={() => setPage(id)}
                 className="rounded-2xl border border-border bg-card shadow-sm p-5 text-left flex items-center gap-4 hover:border-primary/40 hover:shadow-md transition-all group"
               >
-                <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-all" style={{ background: "hsl(var(--primary) / 0.08)" }}>
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "hsl(var(--primary) / 0.08)" }}>
                   <Icon className="h-5 w-5" style={{ color: "hsl(var(--primary))" }} />
                 </div>
                 <div className="flex-1 min-w-0">
