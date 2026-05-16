@@ -31,6 +31,129 @@ function SectionHeader({ id, open, toggle, icon: Icon, title, desc }: {
   );
 }
 
+function InitialStockPanel({
+  products, stockMap, setStockMap, onSave,
+}: {
+  products: any[];
+  stockMap: Record<string, Record<string, string>>;
+  setStockMap: React.Dispatch<React.SetStateAction<Record<string, Record<string, string>>>>;
+  onSave: () => void;
+}) {
+  const [activeTab, setActiveTab] = useState<string>(LOCATIONS[0]);
+
+  const locationGroups = [
+    { label: "Branches", locs: ["Adenta", "Spintex", "Kasoa"] },
+    { label: "Warehouses", locs: ["Main Warehouse", "North Warehouse"] },
+  ];
+
+  function adjust(loc: string, code: string, delta: number) {
+    setStockMap(m => {
+      const cur = Math.max(0, Number(m[loc]?.[code] ?? 0) + delta);
+      return { ...m, [loc]: { ...(m[loc] ?? {}), [code]: String(cur) } };
+    });
+  }
+
+  const totalForTab = products.reduce((s, p) => s + Number(stockMap[activeTab]?.[p.code] ?? 0), 0);
+
+  return (
+    <div className="border-t border-border">
+      {/* Notice */}
+      <div className="px-6 pt-5">
+        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm font-bold text-amber-800 dark:text-amber-300">
+          Set opening counts per location before you go live. These values will overwrite current quantities.
+        </div>
+      </div>
+
+      {/* Location tab groups */}
+      <div className="px-6 pt-4">
+        {locationGroups.map(group => (
+          <div key={group.label} className="mb-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">{group.label}</p>
+            <div className="flex gap-2 flex-wrap">
+              {group.locs.map(loc => (
+                <button
+                  key={loc}
+                  onClick={() => setActiveTab(loc)}
+                  className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${
+                    activeTab === loc
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  {loc}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Product rows */}
+      <div className="px-6 pb-2 pt-3 space-y-2">
+        {products.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">No products found.</p>
+        ) : (
+          products.map(p => {
+            const qty = Number(stockMap[activeTab]?.[p.code] ?? 0);
+            return (
+              <div
+                key={p.code}
+                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-foreground text-sm leading-tight">{p.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{p.code}</span>
+                    <span className="text-muted-foreground/40">·</span>
+                    <span className="text-[10px] font-bold text-muted-foreground">{p.unit}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => adjust(activeTab, p.code, -1)}
+                    disabled={qty <= 0}
+                    className="h-8 w-8 rounded-lg border border-border bg-muted flex items-center justify-center text-lg font-black text-muted-foreground hover:bg-muted/70 disabled:opacity-30 transition-all leading-none"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    min="0"
+                    value={qty === 0 ? "" : qty}
+                    placeholder="0"
+                    onChange={e => setStockMap(m => ({ ...m, [activeTab]: { ...(m[activeTab] ?? {}), [p.code]: e.target.value } }))}
+                    className="w-16 rounded-lg border border-border bg-background px-2 py-1.5 text-center text-sm font-black outline-none focus:border-primary text-foreground"
+                  />
+                  <button
+                    onClick={() => adjust(activeTab, p.code, 1)}
+                    className="h-8 w-8 rounded-lg border border-border bg-muted flex items-center justify-center text-lg font-black text-muted-foreground hover:bg-muted/70 transition-all leading-none"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-6 pb-6 pt-3 flex items-center justify-between gap-4">
+        <p className="text-xs font-bold text-muted-foreground">
+          <span className="font-black text-foreground">{totalForTab}</span> total units entered for {activeTab}
+        </p>
+        <button
+          data-testid="button-save-stock"
+          onClick={onSave}
+          className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-black text-white hover:bg-emerald-700 transition-all"
+        >
+          <Save className="h-4 w-4" /> Save All Stock
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Settings() {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -343,48 +466,12 @@ export default function Settings() {
       <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
         <SectionHeader id="initialStock" open={open} toggle={toggle} icon={Package} title="Initial Stock Setup" desc="Set opening stock quantities before going live" />
         {open === "initialStock" && (
-          <div className="px-6 pb-6 border-t border-border pt-5 space-y-4">
-            <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm font-bold text-amber-800 dark:text-amber-300">
-              Use this to set opening stock counts before selling. Values will overwrite current quantities.
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="px-3 py-3 text-left text-xs font-black uppercase tracking-widest text-muted-foreground">Product</th>
-                    {LOCATIONS.map(l => (
-                      <th key={l} className="px-3 py-3 text-center text-xs font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">{l}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(products ?? []).map(p => (
-                    <tr key={p.code} className="border-b border-border/50">
-                      <td className="px-3 py-2">
-                        <p className="font-bold text-foreground">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.code} · {p.unit}</p>
-                      </td>
-                      {LOCATIONS.map(loc => (
-                        <td key={loc} className="px-3 py-2 text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            value={stockMap[loc]?.[p.code] ?? "0"}
-                            onChange={e => setStockMap(m => ({ ...m, [loc]: { ...(m[loc] ?? {}), [p.code]: e.target.value } }))}
-                            className="w-16 rounded-lg border border-border bg-background px-2 py-1.5 text-center text-sm font-bold outline-none focus:border-primary"
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <button data-testid="button-save-stock" onClick={handleStockSave}
-              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-black text-white hover:bg-emerald-700 transition-all">
-              <Save className="h-4 w-4" /> Save All Stock Quantities
-            </button>
-          </div>
+          <InitialStockPanel
+            products={products ?? []}
+            stockMap={stockMap}
+            setStockMap={setStockMap}
+            onSave={handleStockSave}
+          />
         )}
       </div>
 
