@@ -8,21 +8,15 @@ interface LoginProps {
   companyName?: string;
 }
 
-const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
+const PARTICLES = Array.from({ length: 40 }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
   y: Math.random() * 100,
-  size: 2 + Math.random() * 5,
-  delay: Math.random() * 5,
-  duration: 5 + Math.random() * 8,
-  opacity: 0.15 + Math.random() * 0.4,
+  size: 1.5 + Math.random() * 4,
+  delay: Math.random() * 6,
+  duration: 6 + Math.random() * 10,
+  opacity: 0.1 + Math.random() * 0.35,
 }));
-
-const ORBS = [
-  { w: 500, h: 500, x: -120, y: -120, color: "rgba(99,102,241,0.18)", dur: 12 },
-  { w: 400, h: 400, x: "60%", y: "55%", color: "rgba(16,185,129,0.12)", dur: 16 },
-  { w: 300, h: 300, x: "20%", y: "70%", color: "rgba(245,158,11,0.10)", dur: 10 },
-];
 
 export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
   const [user, setUser] = useState("owner_admin");
@@ -32,7 +26,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
   const [err, setErr] = useState("");
 
   const resolvedLogo = logoUrl || localStorage.getItem("bc_logo") || "";
-  const resolvedName = companyName || localStorage.getItem("bc_company") || "";
+  const resolvedName = companyName || localStorage.getItem("bc_company") || "BranchControl";
 
   function tryLogin() {
     if (!user || !pass) { setErr("Enter your credentials"); return; }
@@ -46,145 +40,181 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
       {/* ── Left panel ── */}
       <div
         className="hidden lg:flex w-1/2 relative overflow-hidden"
-        style={{ background: "hsl(222 47% 8%)" }}
+        style={{ background: "linear-gradient(160deg, hsl(222 60% 6%) 0%, hsl(240 50% 10%) 50%, hsl(222 47% 8%) 100%)" }}
       >
-        {/* Animated mesh grid */}
+        {/* Mesh grid */}
         <div
-          className="absolute inset-0 opacity-[0.04]"
+          className="absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
+              "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
           }}
         />
 
-        {/* Big colour orbs */}
-        {ORBS.map((o, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              width: o.w, height: o.h,
-              left: o.x, top: o.y,
-              background: `radial-gradient(circle, ${o.color} 0%, transparent 70%)`,
-              filter: "blur(40px)",
-            }}
-            animate={{ scale: [1, 1.25, 1], opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: o.dur, repeat: Infinity, ease: "easeInOut", delay: i * 2 }}
-          />
-        ))}
+        {/* Deep background orbs */}
+        <motion.div
+          className="absolute pointer-events-none"
+          style={{
+            width: 700, height: 700, left: "50%", top: "50%",
+            marginLeft: -350, marginTop: -350,
+            background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 65%)",
+            filter: "blur(60px)",
+          }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.9, 0.5] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute pointer-events-none"
+          style={{
+            width: 400, height: 400, left: "-10%", top: "60%",
+            background: "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)",
+            filter: "blur(50px)",
+          }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.7, 0.3] }}
+          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        />
+        <motion.div
+          className="absolute pointer-events-none"
+          style={{
+            width: 350, height: 350, left: "65%", top: "-5%",
+            background: "radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%)",
+            filter: "blur(50px)",
+          }}
+          animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.65, 0.3] }}
+          transition={{ duration: 13, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+        />
 
         {/* Particles */}
         {PARTICLES.map(p => (
           <motion.div
             key={p.id}
             className="absolute rounded-full bg-white"
-            style={{
-              left: `${p.x}%`, top: `${p.y}%`,
-              width: p.size, height: p.size,
-              opacity: p.opacity,
-            }}
-            animate={{ y: [-24, 24, -24], opacity: [p.opacity * 0.4, p.opacity, p.opacity * 0.4] }}
+            style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size, opacity: p.opacity }}
+            animate={{ y: [-30, 30, -30], opacity: [p.opacity * 0.3, p.opacity, p.opacity * 0.3] }}
             transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
           />
         ))}
 
-        {/* Rotating ring 1 */}
-        <motion.div
-          className="absolute rounded-full border border-white/10 pointer-events-none"
-          style={{ width: 520, height: 520, left: "50%", top: "50%", marginLeft: -260, marginTop: -260 }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
-        />
-        {/* Rotating ring 2 — counter */}
-        <motion.div
-          className="absolute rounded-full border border-white/5 pointer-events-none"
-          style={{
-            width: 680, height: 680, left: "50%", top: "50%", marginLeft: -340, marginTop: -340,
-            borderStyle: "dashed",
-          }}
-          animate={{ rotate: -360 }}
-          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-        />
-        {/* Rotating ring 3 — fast thin */}
+        {/* Rotating rings — large, slow, dramatic */}
         <motion.div
           className="absolute rounded-full pointer-events-none"
           style={{
-            width: 380, height: 380, left: "50%", top: "50%", marginLeft: -190, marginTop: -190,
-            border: "1.5px solid rgba(99,102,241,0.25)",
+            width: 640, height: 640, left: "50%", top: "50%", marginLeft: -320, marginTop: -320,
+            border: "1px solid rgba(99,102,241,0.18)",
           }}
           animate={{ rotate: 360 }}
-          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
         />
+        <motion.div
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            width: 800, height: 800, left: "50%", top: "50%", marginLeft: -400, marginTop: -400,
+            border: "1px dashed rgba(255,255,255,0.06)",
+          }}
+          animate={{ rotate: -360 }}
+          transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            width: 460, height: 460, left: "50%", top: "50%", marginLeft: -230, marginTop: -230,
+            border: "1.5px solid rgba(99,102,241,0.22)",
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+        />
+        {/* Dot on ring */}
+        <motion.div
+          className="absolute pointer-events-none"
+          style={{ width: 640, height: 640, left: "50%", top: "50%", marginLeft: -320, marginTop: -320 }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
+        >
+          <div className="absolute w-3 h-3 rounded-full bg-indigo-400 shadow-lg shadow-indigo-400/60" style={{ top: -6, left: "50%", marginLeft: -6 }} />
+        </motion.div>
+        <motion.div
+          className="absolute pointer-events-none"
+          style={{ width: 460, height: 460, left: "50%", top: "50%", marginLeft: -230, marginTop: -230 }}
+          animate={{ rotate: -360 }}
+          transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+        >
+          <div className="absolute w-2 h-2 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/60" style={{ bottom: -4, left: "50%", marginLeft: -4 }} />
+        </motion.div>
 
-        {/* Sweeping highlight */}
+        {/* Sweeping conic spotlight */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background:
-              "conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(255,255,255,0.04) 40deg, transparent 80deg)",
+            background: "conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(255,255,255,0.035) 30deg, transparent 60deg)",
           }}
           animate={{ rotate: [0, 360] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         />
 
         {/* Centre content */}
-        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-10">
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-10 gap-0">
 
-          {/* Logo / placeholder */}
+          {/* Logo */}
           <AnimatePresence mode="wait">
             {resolvedLogo ? (
               <motion.div
                 key="logo"
-                initial={{ opacity: 0, scale: 0.4, y: 40 }}
+                initial={{ opacity: 0, scale: 0.3, y: 60 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.9, type: "spring", bounce: 0.4 }}
-                className="mb-8 relative"
+                transition={{ duration: 1, type: "spring", bounce: 0.35 }}
+                className="relative mb-10"
               >
-                {/* Halo behind logo */}
                 <motion.div
-                  className="absolute inset-0 rounded-full blur-3xl"
-                  style={{ background: "rgba(99,102,241,0.35)", transform: "scale(1.6)" }}
-                  animate={{ scale: [1.5, 1.9, 1.5], opacity: [0.5, 0.9, 0.5] }}
-                  transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute rounded-full blur-3xl pointer-events-none"
+                  style={{
+                    width: "140%", height: "140%", left: "-20%", top: "-20%",
+                    background: "radial-gradient(circle, rgba(99,102,241,0.45) 0%, transparent 70%)",
+                  }}
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 />
                 <motion.img
                   src={resolvedLogo}
                   alt="Company logo"
-                  className="relative max-w-[400px] max-h-[280px] object-contain drop-shadow-2xl"
-                  animate={{ y: [0, -10, 0], scale: [1, 1.02, 1] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative max-w-[480px] max-h-[340px] w-full object-contain drop-shadow-2xl"
+                  animate={{ y: [0, -12, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 />
               </motion.div>
             ) : (
               <motion.div
                 key="placeholder"
-                initial={{ opacity: 0, scale: 0.4, y: 40 }}
+                initial={{ opacity: 0, scale: 0.3, y: 60 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.9, type: "spring", bounce: 0.45 }}
-                className="mb-8 relative"
+                transition={{ duration: 1, type: "spring", bounce: 0.38 }}
+                className="relative mb-10"
               >
                 {/* Outer halo */}
                 <motion.div
-                  className="absolute rounded-full blur-2xl"
+                  className="absolute rounded-full blur-3xl pointer-events-none"
                   style={{
-                    width: 280, height: 280, left: "50%", top: "50%",
-                    marginLeft: -140, marginTop: -140,
-                    background: "rgba(99,102,241,0.30)",
+                    width: 400, height: 400, left: "50%", top: "50%", marginLeft: -200, marginTop: -200,
+                    background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 70%)",
                   }}
-                  animate={{ scale: [1, 1.35, 1], opacity: [0.4, 0.85, 0.4] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  animate={{ scale: [1, 1.35, 1], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
                 />
+                {/* Icon box */}
                 <motion.div
-                  className="relative w-48 h-48 rounded-3xl bg-white/10 border border-white/20 flex items-center justify-center shadow-2xl"
-                  animate={{ y: [0, -10, 0], rotate: [0, 1.5, 0, -1.5, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative w-64 h-64 rounded-[2.5rem] flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(255,255,255,0.05) 100%)",
+                    border: "1.5px solid rgba(255,255,255,0.15)",
+                    boxShadow: "0 0 60px rgba(99,102,241,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
+                  }}
+                  animate={{ y: [0, -14, 0], rotate: [0, 0.8, 0, -0.8, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  {/* Inner glow */}
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/10 to-transparent" />
-                  <svg viewBox="0 0 64 64" className="w-24 h-24 text-white/70 relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-br from-white/10 to-transparent" />
+                  <svg viewBox="0 0 64 64" className="w-32 h-32 text-white/75 relative z-10" fill="none" stroke="currentColor" strokeWidth="1.2">
                     <rect x="8" y="28" width="48" height="28" rx="3" />
                     <path d="M4 28L32 8l28 20" />
                     <rect x="24" y="40" width="16" height="16" />
@@ -192,60 +222,47 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
                     <line x1="40" y1="36" x2="40" y2="40" />
                   </svg>
                 </motion.div>
-                <motion.p
-                  className="text-white/30 text-xs text-center mt-3 font-bold"
-                  animate={{ opacity: [0.4, 0.8, 0.4] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                >
-                  Upload logo in Settings
-                </motion.p>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Company name */}
-          {resolvedName && (
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="text-white text-2xl font-black text-center mb-2 drop-shadow-lg"
-            >
-              {resolvedName}
-            </motion.p>
-          )}
-
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
-            className="text-white/30 text-sm font-bold text-center tracking-wide"
-          >
-            Building Materials · 3 Branches · 2 Warehouses
-          </motion.p>
-
-          {/* Powered by */}
+          {/* Company name — large and dominant */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            className="absolute bottom-8 left-0 right-0 flex justify-center"
+            transition={{ delay: 0.5, duration: 0.7 }}
+            className="text-center"
           >
+            <h1 className="text-4xl font-black text-white leading-tight tracking-tight drop-shadow-2xl">
+              {resolvedName}
+            </h1>
             <motion.div
-              className="flex items-center gap-2 bg-white/5 rounded-full px-5 py-2.5 border border-white/10 backdrop-blur-sm"
-              whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
-            >
-              <motion.div
-                className="h-2 w-2 rounded-full bg-emerald-400"
-                animate={{ scale: [1, 1.5, 1], opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              />
-              <span className="text-xs font-bold text-white/40">Powered by</span>
-              <span className="text-xs font-black text-white/70">ChalePay</span>
-            </motion.div>
+              className="mt-3 mx-auto h-0.5 rounded-full"
+              style={{ background: "linear-gradient(90deg, transparent, rgba(99,102,241,0.8), transparent)" }}
+              initial={{ width: 0 }}
+              animate={{ width: "80%" }}
+              transition={{ delay: 0.9, duration: 0.8, ease: "easeOut" }}
+            />
           </motion.div>
         </div>
+
+        {/* Powered by */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.1 }}
+          className="absolute bottom-8 left-0 right-0 flex justify-center"
+        >
+          <div className="flex items-center gap-2 bg-white/5 rounded-full px-5 py-2.5 border border-white/10 backdrop-blur-sm">
+            <motion.div
+              className="h-2 w-2 rounded-full bg-emerald-400"
+              animate={{ scale: [1, 1.6, 1], opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <span className="text-xs font-bold text-white/40">Powered by</span>
+            <span className="text-xs font-black text-white/70">ChalePay</span>
+          </div>
+        </motion.div>
       </div>
 
       {/* ── Right panel ── */}
@@ -317,7 +334,6 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
               whileTap={{ scale: 0.97 }}
               className="w-full rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground transition disabled:opacity-50 relative overflow-hidden"
             >
-              {/* Shimmer effect */}
               {!loading && (
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
