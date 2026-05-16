@@ -57,6 +57,11 @@ export function applySidebarColor(hex: string) {
   document.documentElement.style.setProperty("--sidebar-accent", shiftL(hsl, 5));
 }
 
+export function applyLoginPanelBg(hex: string) {
+  if (!isHex(hex)) return;
+  document.documentElement.style.setProperty("--login-panel-bg", hex);
+}
+
 export function applyLoginRightBg(hex: string) {
   if (!isHex(hex)) return;
   document.documentElement.style.setProperty("--login-right-bg", hex);
@@ -74,6 +79,7 @@ export function applyAllColors(colors: {
   loginGlowColor: string;
   contentBarColor: string;
   sidebarColor: string;
+  loginPanelBg: string;
   loginRightBg: string;
   contentBg: string;
 }) {
@@ -81,6 +87,7 @@ export function applyAllColors(colors: {
   applyLoginGlowColor(colors.loginGlowColor);
   applyContentBarColor(colors.contentBarColor);
   applySidebarColor(colors.sidebarColor);
+  applyLoginPanelBg(colors.loginPanelBg);
   applyLoginRightBg(colors.loginRightBg);
   applyContentBg(colors.contentBg);
 }

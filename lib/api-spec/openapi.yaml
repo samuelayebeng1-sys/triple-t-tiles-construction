@@ -937,7 +937,7 @@ components:
 
     Settings:
       type: object
-      required: [companyName, phone, email, logoUrl, accentColor, loginGlowColor, contentBarColor, sidebarColor, loginRightBg, contentBg, smsCredit, smsLowStock, smsDaily, smsSenderId]
+      required: [companyName, phone, email, logoUrl, accentColor, loginGlowColor, contentBarColor, sidebarColor, loginPanelBg, loginRightBg, contentBg, smsCredit, smsLowStock, smsDaily, smsSenderId]
       properties:
         companyName:
           type: string
@@ -954,6 +954,8 @@ components:
         contentBarColor:
           type: string
         sidebarColor:
+          type: string
+        loginPanelBg:
           type: string
         loginRightBg:
           type: string
@@ -986,6 +988,8 @@ components:
         contentBarColor:
           type: string
         sidebarColor:
+          type: string
+        loginPanelBg:
           type: string
         loginRightBg:
           type: string

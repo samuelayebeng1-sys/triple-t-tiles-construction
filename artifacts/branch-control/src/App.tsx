@@ -31,12 +31,13 @@ function ThemeLoader() {
         loginGlowColor: settings.loginGlowColor,
         contentBarColor: settings.contentBarColor,
         sidebarColor: settings.sidebarColor,
+        loginPanelBg: settings.loginPanelBg,
         loginRightBg: settings.loginRightBg,
         contentBg: settings.contentBg,
       });
     }
   }, [settings?.accentColor, settings?.loginGlowColor, settings?.contentBarColor,
-      settings?.sidebarColor, settings?.loginRightBg, settings?.contentBg]);
+      settings?.sidebarColor, settings?.loginPanelBg, settings?.loginRightBg, settings?.contentBg]);
   return null;
 }
 

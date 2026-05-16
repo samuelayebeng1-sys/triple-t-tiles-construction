@@ -40,7 +40,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
       {/* ── Left panel ── */}
       <div
         className="hidden lg:flex w-1/2 relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg, hsl(222 60% 6%) 0%, hsl(240 50% 10%) 50%, hsl(222 47% 8%) 100%)" }}
+        style={{ background: "var(--login-panel-bg, #0a0f1e)" }}
       >
         {/* Mesh grid */}
         <div

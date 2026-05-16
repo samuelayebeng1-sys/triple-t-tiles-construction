@@ -12,6 +12,7 @@ export const settingsTable = pgTable("settings", {
   loginGlowColor: text("login_glow_color").notNull().default("#7c3aed"),
   contentBarColor: text("content_bar_color").notNull().default("#0f172a"),
   sidebarColor: text("sidebar_color").notNull().default("#0f172a"),
+  loginPanelBg: text("login_panel_bg").notNull().default("#0a0f1e"),
   loginRightBg: text("login_right_bg").notNull().default("#f8fafc"),
   contentBg: text("content_bg").notNull().default("#f1f5f9"),
   smsCredit: boolean("sms_credit").notNull().default(true),

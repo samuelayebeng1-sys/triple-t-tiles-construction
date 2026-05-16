@@ -15,7 +15,7 @@ import {
   Save, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight,
   Building2, Truck, Package, MessageSquare, Palette, Upload, MapPin,
 } from "lucide-react";
-import { applyAllColors, applyAccentColor, applyLoginGlowColor, applyContentBarColor, applySidebarColor, applyLoginRightBg, applyContentBg } from "@/lib/theme";
+import { applyAllColors, applyAccentColor, applyLoginGlowColor, applyContentBarColor, applySidebarColor, applyLoginPanelBg, applyLoginRightBg, applyContentBg } from "@/lib/theme";
 
 type Section = "business" | "suppliers" | "products" | "locations" | "initialStock" | "sms" | null;
 
@@ -166,6 +166,7 @@ const ACCENT_SWATCHES  = ["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be
 const GLOW_SWATCHES    = ["#7c3aed","#4f46e5","#0ea5e9","#059669","#dc2626","#db2777","#d97706","#0f172a"];
 const BAR_SWATCHES     = ["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be123c","#0e7490","#374151"];
 const SIDEBAR_SWATCHES = ["#0f172a","#1e1b4b","#14532d","#431407","#3b0764","#4c0519","#083344","#18181b"];
+const PANEL_SWATCHES   = ["#0a0f1e","#0f172a","#1e1b4b","#14532d","#3b0764","#4c0519","#083344","#18181b"];
 const RIGHT_SWATCHES   = ["#f8fafc","#ffffff","#fef9f0","#f0fdf4","#fdf4ff","#fff1f2","#f0f9ff","#1a1a2e"];
 const CONTENT_SWATCHES = ["#f1f5f9","#ffffff","#fefce8","#f0fdf4","#faf5ff","#fff1f2","#f0f9ff","#0f172a"];
 
@@ -239,7 +240,7 @@ export default function Settings() {
   const [profile, setProfile] = useState({
     companyName: "", phone: "", email: "", logoUrl: "",
     accentColor: "#0f172a", loginGlowColor: "#7c3aed", contentBarColor: "#0f172a",
-    sidebarColor: "#0f172a", loginRightBg: "#f8fafc", contentBg: "#f1f5f9",
+    sidebarColor: "#0f172a", loginPanelBg: "#0a0f1e", loginRightBg: "#f8fafc", contentBg: "#f1f5f9",
     smsCredit: true, smsLowStock: true, smsDaily: false, smsSenderId: "BRANCHCTRL",
   });
   const [supplierForm, setSupplierForm] = useState({ id: null as number | null, name: "", phone: "" });
@@ -261,6 +262,7 @@ export default function Settings() {
         loginGlowColor: settings.loginGlowColor,
         contentBarColor: settings.contentBarColor,
         sidebarColor: settings.sidebarColor,
+        loginPanelBg: settings.loginPanelBg,
         loginRightBg: settings.loginRightBg,
         contentBg: settings.contentBg,
         smsCredit: settings.smsCredit,
@@ -273,6 +275,7 @@ export default function Settings() {
         loginGlowColor: settings.loginGlowColor,
         contentBarColor: settings.contentBarColor,
         sidebarColor: settings.sidebarColor,
+        loginPanelBg: settings.loginPanelBg,
         loginRightBg: settings.loginRightBg,
         contentBg: settings.contentBg,
       });
@@ -477,27 +480,35 @@ export default function Settings() {
         </div>
 
         {/* Row 2 */}
-        <div className="px-6 pb-2 pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="px-6 pb-2 pt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {/* Zone 4: Sidebar */}
           <ColorZone
             label="Sidebar Background"
-            sub="The navigation sidebar — where BranchControl, menu items and Sign Out live"
+            sub="Navigation sidebar — BranchControl, menu items and Sign Out"
             swatches={SIDEBAR_SWATCHES}
             value={profile.sidebarColor}
             onChange={c => { setProfile(f => ({ ...f, sidebarColor: c })); applySidebarColor(c); }}
           />
-          {/* Zone 5: Login Right Panel */}
+          {/* Zone 5: Login Left Panel Background */}
+          <ColorZone
+            label="Login Left Panel Background"
+            sub="The dark background behind the orbs, rings and BranchControl icon"
+            swatches={PANEL_SWATCHES}
+            value={profile.loginPanelBg}
+            onChange={c => { setProfile(f => ({ ...f, loginPanelBg: c })); applyLoginPanelBg(c); }}
+          />
+          {/* Zone 6: Login Right Panel */}
           <ColorZone
             label="Login Right Panel"
-            sub="Background of the form side of the login screen — where OWNER PORTAL and fields appear"
+            sub="Background of the form side — OWNER PORTAL, fields and Sign In button"
             swatches={RIGHT_SWATCHES}
             value={profile.loginRightBg}
             onChange={c => { setProfile(f => ({ ...f, loginRightBg: c })); applyLoginRightBg(c); }}
           />
-          {/* Zone 6: Content Background */}
+          {/* Zone 7: Content Background */}
           <ColorZone
             label="Page Background"
-            sub="The background of every page — Dashboard, Reports, Stock Search, all tabs"
+            sub="Background of every page — Dashboard, Reports, Stock Search, all tabs"
             swatches={CONTENT_SWATCHES}
             value={profile.contentBg}
             onChange={c => { setProfile(f => ({ ...f, contentBg: c })); applyContentBg(c); }}
@@ -507,16 +518,18 @@ export default function Settings() {
         {/* Live preview mini-bar */}
         <div className="mx-6 mt-3 mb-5 rounded-xl overflow-hidden border border-border">
           <div className="h-1 w-full" style={{ background: profile.contentBarColor }} />
-          <div className="flex items-center gap-3 px-4 py-2.5" style={{ background: profile.sidebarColor }}>
-            <div className="h-2.5 w-2.5 rounded-full" style={{ background: profile.loginGlowColor }} />
-            <span className="text-[10px] font-bold text-white/60">Login glow</span>
-            <div className="h-2.5 w-2.5 rounded-full ml-3" style={{ background: profile.accentColor }} />
+          <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap" style={{ background: profile.sidebarColor }}>
+            <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: profile.loginPanelBg, border: "1px solid rgba(255,255,255,0.2)" }} />
+            <span className="text-[10px] font-bold text-white/60">Left panel</span>
+            <div className="h-2.5 w-2.5 rounded-full ml-2 shrink-0" style={{ background: profile.loginGlowColor }} />
+            <span className="text-[10px] font-bold text-white/60">Glow</span>
+            <div className="h-2.5 w-2.5 rounded-full ml-2 shrink-0" style={{ background: profile.accentColor }} />
             <span className="text-[10px] font-bold text-white/60">Accent</span>
-            <div className="ml-auto flex items-center gap-2">
-              <div className="h-5 w-12 rounded" style={{ background: profile.loginRightBg, border: "1px solid rgba(0,0,0,0.1)" }} />
-              <span className="text-[10px] font-bold text-white/60">Login bg</span>
-              <div className="h-5 w-12 rounded" style={{ background: profile.contentBg, border: "1px solid rgba(0,0,0,0.1)" }} />
-              <span className="text-[10px] font-bold text-white/60">Page bg</span>
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              <div className="h-5 w-10 rounded shrink-0" style={{ background: profile.loginRightBg, border: "1px solid rgba(0,0,0,0.15)" }} />
+              <span className="text-[10px] font-bold text-white/60">Right</span>
+              <div className="h-5 w-10 rounded shrink-0" style={{ background: profile.contentBg, border: "1px solid rgba(0,0,0,0.15)" }} />
+              <span className="text-[10px] font-bold text-white/60">Pages</span>
             </div>
           </div>
         </div>
