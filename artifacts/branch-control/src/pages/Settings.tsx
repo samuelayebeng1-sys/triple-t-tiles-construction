@@ -47,7 +47,7 @@ export default function Settings() {
   const { data: stock } = useGetStock({ query: { queryKey: getGetStockQueryKey() } });
 
   const [profile, setProfile] = useState({ companyName: "", phone: "", email: "", logoUrl: "", accentColor: "#0f172a", smsCredit: true, smsLowStock: true, smsDaily: false, smsSenderId: "BRANCHCTRL" });
-  const [supplierForm, setSupplierForm] = useState({ id: null as number | null, name: "", phone: "", email: "", contact: "", notes: "" });
+  const [supplierForm, setSupplierForm] = useState({ id: null as number | null, name: "", phone: "" });
   const [stockMap, setStockMap] = useState<Record<string, Record<string, string>>>({});
   const [editingSupp, setEditingSupp] = useState<number | null>(null);
 
@@ -125,10 +125,10 @@ export default function Settings() {
     toast({ title: "Stock updated", description: `${count} stock entries saved.` });
   }
 
-  function resetSupplierForm() { setSupplierForm({ id: null, name: "", phone: "", email: "", contact: "", notes: "" }); setEditingSupp(null); }
+  function resetSupplierForm() { setSupplierForm({ id: null, name: "", phone: "" }); setEditingSupp(null); }
 
   function handleEditSupplier(s: any) {
-    setSupplierForm({ id: s.id, name: s.name, phone: s.phone, email: s.email, contact: s.contact, notes: s.notes });
+    setSupplierForm({ id: s.id, name: s.name, phone: s.phone });
     setEditingSupp(s.id);
   }
 
@@ -297,18 +297,6 @@ export default function Settings() {
                   <label className={labelClass}>Phone</label>
                   <input value={supplierForm.phone} onChange={e => setSupplierForm(f => ({ ...f, phone: e.target.value }))} className={inputClass} placeholder="050 XXX XXXX" />
                 </div>
-                <div>
-                  <label className={labelClass}>Email</label>
-                  <input value={supplierForm.email} onChange={e => setSupplierForm(f => ({ ...f, email: e.target.value }))} className={inputClass} placeholder="sales@supplier.com" />
-                </div>
-                <div>
-                  <label className={labelClass}>Contact Person</label>
-                  <input value={supplierForm.contact} onChange={e => setSupplierForm(f => ({ ...f, contact: e.target.value }))} className={inputClass} placeholder="Mr. Kofi Agyeman" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={labelClass}>Notes</label>
-                  <input value={supplierForm.notes} onChange={e => setSupplierForm(f => ({ ...f, notes: e.target.value }))} className={inputClass} placeholder="Credit terms, delivery schedule, etc." />
-                </div>
               </div>
               <div className="mt-3 flex gap-2">
                 <button data-testid="button-save-supplier" onClick={handleSaveSupplier} disabled={!supplierForm.name || createSupplier.isPending || updateSupplier.isPending}
@@ -333,7 +321,7 @@ export default function Settings() {
                   <div key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
                     <div>
                       <p className="font-black text-foreground text-sm">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">{[s.phone, s.contact].filter(Boolean).join(" · ")}</p>
+                      <p className="text-xs text-muted-foreground">{s.phone || "No phone"}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleEditSupplier(s)} className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold hover:bg-muted/70 flex items-center gap-1">
