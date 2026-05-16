@@ -2,20 +2,17 @@ import { useMemo, useState } from "react";
 import { useListEntries } from "@workspace/api-client-react";
 import { GHS, pct, BRANCHES } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ChevronDown, ChevronUp, FileText, Table2,
-  X, Download, CheckCircle2,
-} from "lucide-react";
+import { FileText, Table2, X, Download, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const PERIODS = ["Today", "This Week", "This Month", "All Time"] as const;
 type Period = typeof PERIODS[number];
 const BRANCH_FILTERS = ["All", ...BRANCHES] as const;
 
-const BRANCH_COLORS: Record<string, { dot: string; text: string; bg: string; border: string }> = {
-  Adenta:  { dot: "#3b82f6", text: "text-blue-700 dark:text-blue-400",    bg: "bg-blue-50 dark:bg-blue-950/30",    border: "border-blue-200 dark:border-blue-800" },
-  Spintex: { dot: "#7c3aed", text: "text-purple-700 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-950/30", border: "border-purple-200 dark:border-purple-800" },
-  Kasoa:   { dot: "#d97706", text: "text-amber-700 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-950/30",  border: "border-amber-200 dark:border-amber-800" },
+const BRANCH_COLORS: Record<string, string> = {
+  Adenta:  "text-blue-600",
+  Spintex: "text-purple-600",
+  Kasoa:   "text-amber-600",
 };
 
 function filterByPeriod(entries: any[], period: Period) {
@@ -56,7 +53,6 @@ function ExportModal({ type, entries, branchFilter, period, onClose }: {
           exit={{opacity:0,y:36,scale:0.96}} transition={{type:"spring",bounce:0.18}}
           onClick={e=>e.stopPropagation()}
           className="relative z-10 w-full max-w-2xl bg-card rounded-3xl border border-border shadow-2xl overflow-hidden">
-
           <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <div className="flex items-center gap-3">
               <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${type==="pdf"?"bg-red-100 dark:bg-red-900/30":"bg-emerald-100 dark:bg-emerald-900/30"}`}>
@@ -69,11 +65,9 @@ function ExportModal({ type, entries, branchFilter, period, onClose }: {
             </div>
             <button onClick={onClose} className="rounded-xl bg-muted p-2 hover:bg-muted/70 transition-colors"><X className="h-4 w-4"/></button>
           </div>
-
           <AnimatePresence mode="wait">
             {done ? (
-              <motion.div key="done" initial={{opacity:0,scale:0.85}} animate={{opacity:1,scale:1}}
-                className="flex flex-col items-center py-14">
+              <motion.div key="done" initial={{opacity:0,scale:0.85}} animate={{opacity:1,scale:1}} className="flex flex-col items-center py-14">
                 <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
                   <CheckCircle2 className="h-8 w-8 text-emerald-600"/>
                 </div>
@@ -82,103 +76,58 @@ function ExportModal({ type, entries, branchFilter, period, onClose }: {
               </motion.div>
             ) : (
               <motion.div key="preview" className="p-4 space-y-4">
-                {type === "pdf" ? (
-                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden text-[10px]">
-                    <div className="bg-[#0f172a] px-5 py-3 flex justify-between">
-                      <div><p className="text-white font-black">{company}</p><p className="text-white/50 text-[9px]">Sales History · {period} · {branchFilter==="All"?"All Branches":branchFilter}</p></div>
-                      <div className="text-right"><p className="text-white/70 text-[9px]">{today}</p><p className="text-white/50 text-[9px]">{entries.length} entries</p></div>
-                    </div>
-                    <div className="grid grid-cols-6 border-b border-gray-100">
-                      {[["Total",GHS(total)],["Profit",GHS(profit)],["Cash",GHS(cash)],["MoMo",GHS(momo)],["Bank",GHS(bank)],["Credit",GHS(credit)]].map(([l,v])=>(
-                        <div key={l} className="px-3 py-2 border-r border-gray-100 last:border-0">
-                          <p className="text-gray-400 text-[8px] uppercase font-bold">{l}</p>
-                          <p className="font-black mt-0.5">{v}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="overflow-auto max-h-52">
-                      <table className="w-full">
-                        <thead><tr className="bg-gray-50 border-b border-gray-100">
-                          {["Branch","Date","Total","Cash","MoMo","Bank","Credit","Profit","Margin"].map(h=>(
-                            <th key={h} className="px-3 py-1.5 text-left text-[8px] font-black uppercase text-gray-400">{h}</th>
-                          ))}
-                        </tr></thead>
-                        <tbody>
-                          {entries.map((e,i)=>(
-                            <tr key={e.id} className={i%2===0?"bg-white":"bg-gray-50/50"}>
-                              <td className="px-3 py-1.5 font-bold">{e.branch}</td>
-                              <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{new Date(e.createdAt).toLocaleDateString("en-GH",{dateStyle:"short"})}</td>
-                              <td className="px-3 py-1.5 font-black">{GHS(e.totalAmount)}</td>
-                              <td className="px-3 py-1.5 text-[#059669]">{GHS(e.totalCash)}</td>
-                              <td className="px-3 py-1.5 text-[#2563eb]">{GHS(e.totalMomo)}</td>
-                              <td className="px-3 py-1.5 text-[#4f46e5]">{GHS(e.totalBank??0)}</td>
-                              <td className="px-3 py-1.5 text-[#dc2626]">{GHS(e.totalCredit)}</td>
-                              <td className="px-3 py-1.5 text-[#7c3aed]">{GHS(e.totalProfit)}</td>
-                              <td className="px-3 py-1.5 text-gray-500">{pct(e.totalProfit,e.totalAmount)}%</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot><tr className="bg-gray-100 border-t-2 border-gray-200 font-black text-[10px]">
-                          <td className="px-3 py-1.5 text-gray-700" colSpan={2}>TOTAL ({entries.length})</td>
-                          <td className="px-3 py-1.5">{GHS(total)}</td>
-                          <td className="px-3 py-1.5 text-[#059669]">{GHS(cash)}</td>
-                          <td className="px-3 py-1.5 text-[#2563eb]">{GHS(momo)}</td>
-                          <td className="px-3 py-1.5 text-[#4f46e5]">{GHS(bank)}</td>
-                          <td className="px-3 py-1.5 text-[#dc2626]">{GHS(credit)}</td>
-                          <td className="px-3 py-1.5 text-[#7c3aed]">{GHS(profit)}</td>
-                          <td className="px-3 py-1.5 text-gray-500">{pct(profit,total)}%</td>
-                        </tr></tfoot>
-                      </table>
-                    </div>
-                    <div className="px-5 py-1.5 border-t border-gray-100 bg-gray-50 flex justify-between">
-                      <p className="text-gray-300 text-[8px]">Generated by BranchControl · ChalePay</p>
-                      <p className="text-gray-300 text-[8px]">{entries.length} records · {pct(profit,total)}% margin</p>
-                    </div>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden text-[10px]">
+                  <div className="bg-[#0f172a] px-5 py-3 flex justify-between">
+                    <div><p className="text-white font-black">{company}</p><p className="text-white/50 text-[9px]">Sales History · {period} · {branchFilter==="All"?"All Branches":branchFilter}</p></div>
+                    <div className="text-right"><p className="text-white/70 text-[9px]">{today}</p><p className="text-white/50 text-[9px]">{entries.length} entries</p></div>
                   </div>
-                ) : (
-                  <div className="rounded-xl border border-gray-200 overflow-hidden text-[10px] bg-white">
-                    <div className="bg-[#1d6f42] px-4 py-2 flex items-center gap-2">
-                      <Table2 className="h-3.5 w-3.5 text-white/80"/>
-                      <span className="text-white font-bold">{fname}</span>
-                    </div>
-                    <div className="flex bg-gray-100 border-b border-gray-200 px-2 pt-1.5 gap-1">
-                      <div className="bg-white border border-gray-200 border-b-0 rounded-t px-3 py-1 font-black text-[#1d6f42]">History</div>
-                    </div>
-                    <div className="grid grid-cols-4 border-b border-gray-200 bg-[#e8f4f0]/60">
-                      {[["TOTAL",GHS(total)],["PROFIT",GHS(profit)],["CASH",GHS(cash)],["BANK",GHS(bank)]].map(([l,v])=>(
-                        <div key={l} className="px-3 py-2 border-r border-gray-200 last:border-0">
-                          <p className="text-gray-400 text-[8px] font-black tracking-widest">{l}</p>
-                          <p className="font-black text-[11px] text-[#1d6f42] mt-0.5">{v}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="overflow-auto max-h-52">
-                      <table className="w-full border-collapse">
-                        <thead><tr className="bg-[#1d6f42]">
-                          {["#","Branch","Date","Total","Cash","MoMo","Bank","Credit","Profit","Margin"].map(h=>(
-                            <th key={h} className="px-2 py-1.5 text-left text-[8px] font-black text-white border-r border-white/10 last:border-0 whitespace-nowrap">{h}</th>
-                          ))}
-                        </tr></thead>
-                        <tbody>
-                          {entries.map((e,i)=>(
-                            <tr key={e.id} className={i%2===0?"bg-white":"bg-[#f0faf5]/60"}>
-                              <td className="px-2 py-1.5 text-gray-300 border-r border-gray-100">{i+1}</td>
-                              <td className="px-2 py-1.5 font-bold border-r border-gray-100">{e.branch}</td>
-                              <td className="px-2 py-1.5 text-gray-500 border-r border-gray-100 whitespace-nowrap">{new Date(e.createdAt).toLocaleDateString("en-GH",{dateStyle:"short"})}</td>
-                              <td className="px-2 py-1.5 font-black border-r border-gray-100">{GHS(e.totalAmount)}</td>
-                              <td className="px-2 py-1.5 text-[#059669] border-r border-gray-100">{GHS(e.totalCash)}</td>
-                              <td className="px-2 py-1.5 text-[#2563eb] border-r border-gray-100">{GHS(e.totalMomo)}</td>
-                              <td className="px-2 py-1.5 text-[#4f46e5] border-r border-gray-100">{GHS(e.totalBank??0)}</td>
-                              <td className="px-2 py-1.5 text-[#dc2626] border-r border-gray-100">{GHS(e.totalCredit)}</td>
-                              <td className="px-2 py-1.5 text-[#7c3aed] border-r border-gray-100">{GHS(e.totalProfit)}</td>
-                              <td className="px-2 py-1.5 text-gray-500">{pct(e.totalProfit,e.totalAmount)}%</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                  <div className="grid grid-cols-6 border-b border-gray-100">
+                    {[["Total",GHS(total)],["Profit",GHS(profit)],["Cash",GHS(cash)],["MoMo",GHS(momo)],["Bank",GHS(bank)],["Credit",GHS(credit)]].map(([l,v])=>(
+                      <div key={l} className="px-3 py-2 border-r border-gray-100 last:border-0">
+                        <p className="text-gray-400 text-[8px] uppercase font-bold">{l}</p>
+                        <p className="font-black mt-0.5">{v}</p>
+                      </div>
+                    ))}
                   </div>
-                )}
+                  <div className="overflow-auto max-h-52">
+                    <table className="w-full">
+                      <thead><tr className="bg-gray-50 border-b border-gray-100">
+                        {["Branch","Date","Total","Cash","MoMo","Bank","Credit","Profit","Margin"].map(h=>(
+                          <th key={h} className="px-3 py-1.5 text-left text-[8px] font-black uppercase text-gray-400">{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody>
+                        {entries.map((e,i)=>(
+                          <tr key={e.id} className={i%2===0?"bg-white":"bg-gray-50/50"}>
+                            <td className="px-3 py-1.5 font-bold">{e.branch}</td>
+                            <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{new Date(e.createdAt).toLocaleDateString("en-GH",{dateStyle:"short"})}</td>
+                            <td className="px-3 py-1.5 font-black">{GHS(e.totalAmount)}</td>
+                            <td className="px-3 py-1.5 text-[#059669]">{GHS(e.totalCash)}</td>
+                            <td className="px-3 py-1.5 text-[#2563eb]">{GHS(e.totalMomo)}</td>
+                            <td className="px-3 py-1.5 text-[#4f46e5]">{GHS(e.totalBank??0)}</td>
+                            <td className="px-3 py-1.5 text-[#dc2626]">{GHS(e.totalCredit)}</td>
+                            <td className="px-3 py-1.5 text-[#7c3aed]">{GHS(e.totalProfit)}</td>
+                            <td className="px-3 py-1.5 text-gray-500">{pct(e.totalProfit,e.totalAmount)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot><tr className="bg-gray-100 border-t-2 border-gray-200 font-black text-[10px]">
+                        <td className="px-3 py-1.5 text-gray-700" colSpan={2}>TOTAL ({entries.length})</td>
+                        <td className="px-3 py-1.5">{GHS(total)}</td>
+                        <td className="px-3 py-1.5 text-[#059669]">{GHS(cash)}</td>
+                        <td className="px-3 py-1.5 text-[#2563eb]">{GHS(momo)}</td>
+                        <td className="px-3 py-1.5 text-[#4f46e5]">{GHS(bank)}</td>
+                        <td className="px-3 py-1.5 text-[#dc2626]">{GHS(credit)}</td>
+                        <td className="px-3 py-1.5 text-[#7c3aed]">{GHS(profit)}</td>
+                        <td className="px-3 py-1.5 text-gray-500">{pct(profit,total)}%</td>
+                      </tr></tfoot>
+                    </table>
+                  </div>
+                  <div className="px-5 py-1.5 border-t border-gray-100 bg-gray-50 flex justify-between">
+                    <p className="text-gray-300 text-[8px]">Generated by BranchControl · ChalePay</p>
+                    <p className="text-gray-300 text-[8px]">{entries.length} records · {pct(profit,total)}% margin</p>
+                  </div>
+                </div>
                 <button onClick={()=>{setDone(true);setTimeout(onClose,2200);}}
                   className={`w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black text-white hover:opacity-90 transition-all ${type==="pdf"?"bg-red-600":"bg-[#1d6f42]"}`}>
                   <Download className="h-4 w-4"/> Download {type==="pdf"?"PDF":"Excel"}
@@ -195,31 +144,31 @@ function ExportModal({ type, entries, branchFilter, period, onClose }: {
 /* ── Page ─────────────────────────────────────────────── */
 export default function HistoryPage() {
   const { data: allEntries = [], isLoading } = useListEntries();
-  const [period, setPeriod]       = useState<Period>("This Month");
+  const [period, setPeriod]   = useState<Period>("This Month");
   const [branchFilter, setBranch] = useState("All");
-  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [exportModal, setExportModal] = useState<"pdf"|"excel"|null>(null);
 
   const filtered = useMemo(() => {
     const byPeriod = filterByPeriod(allEntries, period);
-    return branchFilter === "All" ? byPeriod : byPeriod.filter(e => e.branch === branchFilter);
+    const byBranch = branchFilter === "All" ? byPeriod : byPeriod.filter(e => e.branch === branchFilter);
+    return [...byBranch].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [allEntries, period, branchFilter]);
-
-  const sorted = useMemo(() =>
-    [...filtered].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [filtered]
-  );
 
   const totalSales  = filtered.reduce((s,e) => s + e.totalAmount, 0);
   const totalProfit = filtered.reduce((s,e) => s + e.totalProfit, 0);
+  const totalCash   = filtered.reduce((s,e) => s + e.totalCash, 0);
+  const totalMomo   = filtered.reduce((s,e) => s + e.totalMomo, 0);
+  const totalBank   = filtered.reduce((s,e) => s + (e.totalBank??0), 0);
+  const totalCredit = filtered.reduce((s,e) => s + e.totalCredit, 0);
+  const totalItems  = filtered.reduce((s,e) => s + e.itemsSold, 0);
   const margin      = pct(totalProfit, totalSales);
 
   return (
-    <div className="p-6 space-y-5 max-w-3xl" data-testid="page-history">
+    <div className="p-6 space-y-5 max-w-5xl" data-testid="page-history">
 
       {exportModal && (
         <ExportModal
-          type={exportModal} entries={sorted}
+          type={exportModal} entries={filtered}
           branchFilter={branchFilter} period={period}
           onClose={() => setExportModal(null)}
         />
@@ -229,7 +178,7 @@ export default function HistoryPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-foreground">History</h1>
-          <p className="text-sm text-muted-foreground">{sorted.length} entr{sorted.length !== 1 ? "ies" : "y"} · {GHS(totalSales)} · {margin}% margin</p>
+          <p className="text-sm text-muted-foreground">{filtered.length} entr{filtered.length !== 1 ? "ies" : "y"} · {GHS(totalSales)} · {margin}% margin</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setExportModal("pdf")}
@@ -260,95 +209,93 @@ export default function HistoryPage() {
         ))}
       </div>
 
-      {/* Entry list */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-2xl"/>)}
-        </div>
-      ) : sorted.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card p-16 text-center">
-          <p className="font-bold text-muted-foreground">No entries for this period.</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">Try a wider period or different branch.</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {sorted.map(e => {
-            const c  = BRANCH_COLORS[e.branch] ?? BRANCH_COLORS["Adenta"];
-            const em = pct(e.totalProfit, e.totalAmount);
-            const open = expandedId === e.id;
-
-            return (
-              <div key={e.id} className={`rounded-2xl border bg-card shadow-sm overflow-hidden transition-all ${open ? "border-primary/40" : "border-border"}`}>
-
-                {/* Row */}
-                <button
-                  onClick={() => setExpandedId(open ? null : e.id)}
-                  className="w-full text-left px-5 py-4 flex flex-wrap items-center gap-4 hover:bg-muted/20 transition-colors"
-                >
-                  {/* Branch badge */}
-                  <div className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 shrink-0 ${c.bg} ${c.border}`}>
-                    <span className="h-2 w-2 rounded-full" style={{background: c.dot}}/>
-                    <span className={`text-xs font-black ${c.text}`}>{e.branch}</span>
-                  </div>
-
-                  {/* Date + time */}
-                  <div className="shrink-0">
-                    <p className="text-sm font-bold text-foreground">
-                      {new Date(e.createdAt).toLocaleDateString("en-GH", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {new Date(e.createdAt).toLocaleTimeString("en-GH", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-
-                  {/* Spacer */}
-                  <div className="flex-1"/>
-
-                  {/* Items + margin */}
-                  <div className="text-right shrink-0 hidden sm:block">
-                    <p className="text-xs text-muted-foreground">{e.itemsSold} items</p>
-                    <p className={`text-xs font-bold ${em >= 20 ? "text-emerald-600" : em >= 10 ? "text-amber-600" : "text-red-500"}`}>{em}% margin</p>
-                  </div>
-
-                  {/* Total */}
-                  <div className="text-right shrink-0">
-                    <p className="text-base font-black text-foreground">{GHS(e.totalAmount)}</p>
-                    <p className="text-xs text-purple-600 font-bold">+{GHS(e.totalProfit)}</p>
-                  </div>
-
-                  {/* Status */}
-                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full shrink-0">{e.status}</span>
-
-                  {open ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0"/> : <ChevronDown className="h-4 w-4 text-muted-foreground/40 shrink-0"/>}
-                </button>
-
-                {/* Expanded detail */}
-                {open && (
-                  <div className="border-t border-border px-5 py-4 bg-muted/10">
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                      {[
-                        { label: "Cash",   value: GHS(e.totalCash),        color: "text-emerald-600" },
-                        { label: "MoMo",   value: GHS(e.totalMomo),        color: "text-blue-600" },
-                        { label: "Bank",   value: GHS(e.totalBank ?? 0),   color: "text-indigo-600" },
-                        { label: "Credit", value: GHS(e.totalCredit),      color: "text-red-600" },
-                        { label: "Profit", value: GHS(e.totalProfit),      color: "text-purple-600" },
-                      ].map(({ label, value, color }) => (
-                        <div key={label} className="rounded-xl border border-border bg-card px-4 py-3">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
-                          <p className={`text-base font-black mt-1 ${color}`}>{value}</p>
-                        </div>
-                      ))}
-                    </div>
-                    {e.totalCredit > 0 && e.creditCustomer && (
-                      <p className="mt-3 text-xs text-red-600 font-bold">Credit customer: {e.creditCustomer}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Table */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        {isLoading ? (
+          <div className="p-6 space-y-3">
+            {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 w-full rounded-xl"/>)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center">
+            <p className="font-bold text-muted-foreground">No entries for this period.</p>
+            <p className="text-sm text-muted-foreground/60 mt-1">Try a wider period or different branch.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">#</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Branch</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cash</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">MoMo</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Bank</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Credit</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Profit</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Margin</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Items</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((e, i) => {
+                  const em = pct(e.totalProfit, e.totalAmount);
+                  const bc = BRANCH_COLORS[e.branch] ?? "text-foreground";
+                  return (
+                    <tr key={e.id} className={`border-b border-border/50 ${i % 2 === 0 ? "" : "bg-muted/20"}`}>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">{filtered.length - i}</td>
+                      <td className="px-4 py-3">
+                        <span className={`font-black text-sm ${bc}`}>{e.branch}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <p className="font-bold text-foreground">{new Date(e.createdAt).toLocaleDateString("en-GH", { day: "numeric", month: "short", year: "numeric" })}</p>
+                        <p className="text-[10px] text-muted-foreground">{new Date(e.createdAt).toLocaleTimeString("en-GH", { hour: "2-digit", minute: "2-digit" })}</p>
+                      </td>
+                      <td className="px-4 py-3 font-black text-foreground whitespace-nowrap">{GHS(e.totalAmount)}</td>
+                      <td className="px-4 py-3 font-bold text-emerald-600 whitespace-nowrap">{e.totalCash > 0 ? GHS(e.totalCash) : <span className="text-muted-foreground/30">—</span>}</td>
+                      <td className="px-4 py-3 font-bold text-blue-600 whitespace-nowrap">{e.totalMomo > 0 ? GHS(e.totalMomo) : <span className="text-muted-foreground/30">—</span>}</td>
+                      <td className="px-4 py-3 font-bold text-indigo-600 whitespace-nowrap">{(e.totalBank??0) > 0 ? GHS(e.totalBank) : <span className="text-muted-foreground/30">—</span>}</td>
+                      <td className="px-4 py-3 font-bold text-red-600 whitespace-nowrap">{e.totalCredit > 0 ? GHS(e.totalCredit) : <span className="text-muted-foreground/30">—</span>}</td>
+                      <td className="px-4 py-3 font-bold text-purple-600 whitespace-nowrap">{GHS(e.totalProfit)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`text-xs font-black px-2 py-0.5 rounded-full ${em >= 20 ? "bg-emerald-100 text-emerald-700" : em >= 10 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                          {em}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{e.itemsSold}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{e.status}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-primary/20 bg-primary/5 font-black">
+                  <td className="px-4 py-3 text-muted-foreground text-xs" colSpan={3}>
+                    TOTAL · {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"} · {totalItems} items
+                  </td>
+                  <td className="px-4 py-3 text-foreground whitespace-nowrap">{GHS(totalSales)}</td>
+                  <td className="px-4 py-3 text-emerald-600 whitespace-nowrap">{GHS(totalCash)}</td>
+                  <td className="px-4 py-3 text-blue-600 whitespace-nowrap">{GHS(totalMomo)}</td>
+                  <td className="px-4 py-3 text-indigo-600 whitespace-nowrap">{GHS(totalBank)}</td>
+                  <td className="px-4 py-3 text-red-600 whitespace-nowrap">{GHS(totalCredit)}</td>
+                  <td className="px-4 py-3 text-purple-600 whitespace-nowrap">{GHS(totalProfit)}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-black px-2 py-0.5 rounded-full ${Number(margin) >= 20 ? "bg-emerald-100 text-emerald-700" : Number(margin) >= 10 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                      {margin}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-foreground">{totalItems}</td>
+                  <td className="px-4 py-3" />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
