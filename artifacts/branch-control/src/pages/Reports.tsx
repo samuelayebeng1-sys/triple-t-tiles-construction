@@ -293,21 +293,6 @@ export default function Reports() {
             </div>
           ))}
 
-          {/* Grand total footer */}
-          <div className="rounded-2xl border-2 border-primary bg-primary/5 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Grand Total ({branchFilter === "All" ? "All Branches" : branchFilter})</p>
-                <p className="text-3xl font-black text-foreground mt-1">{GHS(grandTotal)}</p>
-              </div>
-              <div className="text-right text-sm space-y-1">
-                <p>Cash: <strong className="text-emerald-600">{GHS(filtered.reduce((s, r) => s + r.cash, 0))}</strong></p>
-                <p>MoMo: <strong className="text-blue-600">{GHS(filtered.reduce((s, r) => s + r.momo, 0))}</strong></p>
-                <p>Credit: <strong className="text-red-600">{GHS(filtered.reduce((s, r) => s + r.credit, 0))}</strong></p>
-                <p>Profit: <strong className="text-purple-600">{GHS(filtered.reduce((s, r) => s + r.profit, 0))}</strong></p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
