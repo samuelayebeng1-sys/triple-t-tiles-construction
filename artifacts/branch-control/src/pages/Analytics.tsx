@@ -11,14 +11,26 @@ const BRANCH_COLORS: Record<string, string> = {
   Kasoa: "#f59e0b",
 };
 
-const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#f43f5e"];
-const HEAT_COLORS = ["bg-blue-50 dark:bg-blue-950/20", "bg-blue-200 dark:bg-blue-800/40", "bg-blue-400", "bg-blue-600"];
+const PIE_COLORS = [
+  "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#f43f5e",
+  "#06b6d4", "#84cc16", "#f97316", "#ec4899", "#14b8a6",
+  "#6366f1", "#eab308",
+];
+
+function heatColor(intensity: number): { bg: string; text: string } {
+  if (intensity === 0)   return { bg: "#f8fafc", text: "#94a3b8" };
+  if (intensity < 0.2)   return { bg: "#dcfce7", text: "#166534" };
+  if (intensity < 0.4)   return { bg: "#86efac", text: "#14532d" };
+  if (intensity < 0.6)   return { bg: "#4ade80", text: "#14532d" };
+  if (intensity < 0.8)   return { bg: "#16a34a", text: "#ffffff" };
+  return                        { bg: "#14532d", text: "#ffffff" };
+}
 
 function ActiveShape(props: any) {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
   return (
     <g>
-      <text x={cx} y={cy - 16} textAnchor="middle" className="font-black" fill="hsl(222 47% 11%)" fontSize={13} fontWeight={800}>
+      <text x={cx} y={cy - 16} textAnchor="middle" fill="hsl(222 47% 11%)" fontSize={13} fontWeight={800}>
         {payload.name}
       </text>
       <text x={cx} y={cy + 8} textAnchor="middle" fill={fill} fontSize={15} fontWeight={900}>
@@ -37,6 +49,7 @@ export default function Analytics() {
   const { data: weekly, isLoading: weeklyLoading } = useGetWeeklyAnalytics();
   const { data: topProducts, isLoading: topLoading } = useGetTopProducts();
   const [activeIdx, setActiveIdx] = useState(0);
+  const [hoveredCell, setHoveredCell] = useState<{ branch: string; day: string; value: number } | null>(null);
 
   const weeklyChartData = (weekly?.days ?? []).map((day, i) => {
     const entry: Record<string, string | number> = { day };
@@ -45,6 +58,9 @@ export default function Analytics() {
   });
 
   const pieData = (topProducts ?? []).map(p => ({ name: p.name, value: p.revenue, units: p.units }));
+
+  const allValues = (weekly?.branches ?? []).flatMap(b => b.data);
+  const globalMax = allValues.length > 0 ? Math.max(...allValues) : 1;
 
   return (
     <div className="p-6 space-y-6 max-w-5xl" data-testid="page-analytics">
@@ -150,35 +166,80 @@ export default function Analytics() {
 
       {/* Heatmap */}
       <div className="rounded-2xl border border-border bg-card shadow-sm p-6">
-        <h3 className="font-black text-foreground mb-1">Branch × Day Heatmap</h3>
-        <p className="text-sm text-muted-foreground mb-5">Colour intensity = sales strength</p>
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h3 className="font-black text-foreground">Branch × Day Sales Heatmap</h3>
+            <p className="text-sm text-muted-foreground">Darker green = stronger sales day</p>
+          </div>
+          {hoveredCell && (
+            <div className="text-right">
+              <p className="text-xs font-black text-foreground">{hoveredCell.branch} · {hoveredCell.day}</p>
+              <p className="text-lg font-black text-emerald-600">{GHS(hoveredCell.value)}</p>
+            </div>
+          )}
+        </div>
+
         {weeklyLoading ? (
-          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
         ) : (
           <>
-            <div className="grid gap-1.5" style={{ gridTemplateColumns: "80px repeat(7, 1fr)" }}>
-              <div />
-              {(weekly?.days ?? []).map(d => (
-                <div key={d} className="py-1 text-center text-xs font-bold text-muted-foreground">{d}</div>
-              ))}
-              {(weekly?.branches ?? []).map(b => {
-                const max = Math.max(...b.data);
+            <div className="overflow-x-auto">
+              <table className="w-full border-separate border-spacing-1.5">
+                <thead>
+                  <tr>
+                    <th className="w-24" />
+                    {(weekly?.days ?? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]).map(d => (
+                      <th key={d} className="text-center text-xs font-black uppercase tracking-widest text-muted-foreground pb-1 px-1">
+                        {d}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(weekly?.branches ?? []).map(b => (
+                    <tr key={b.branch}>
+                      <td className="text-xs font-black text-foreground pr-3 whitespace-nowrap">{b.branch}</td>
+                      {b.data.map((v, i) => {
+                        const intensity = globalMax > 0 ? v / globalMax : 0;
+                        const { bg, text } = heatColor(intensity);
+                        const day = weekly?.days[i] ?? `D${i + 1}`;
+                        return (
+                          <td key={i} className="p-0">
+                            <div
+                              onMouseEnter={() => setHoveredCell({ branch: b.branch, day, value: v })}
+                              onMouseLeave={() => setHoveredCell(null)}
+                              title={`${b.branch} · ${day}: ${GHS(v)}`}
+                              style={{ background: bg, color: text }}
+                              className="rounded-xl h-14 flex flex-col items-center justify-center cursor-default transition-transform hover:scale-105 hover:shadow-md select-none"
+                            >
+                              <span className="text-[10px] font-black opacity-70">{day}</span>
+                              <span className="text-xs font-black leading-none mt-0.5">
+                                {v > 0 ? (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v) : "—"}
+                              </span>
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Legend */}
+            <div className="mt-5 flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground">Low</span>
+              {[0, 0.15, 0.35, 0.55, 0.75, 1].map((v, i) => {
+                const { bg } = heatColor(v);
                 return (
-                  <>
-                    <div key={`label-${b.branch}`} className="py-3 text-xs font-black text-foreground">{b.branch}</div>
-                    {b.data.map((v, i) => {
-                      const intensity = max > 0 ? v / max : 0;
-                      const bg = intensity > 0.8 ? HEAT_COLORS[3] : intensity > 0.55 ? HEAT_COLORS[2] : intensity > 0.3 ? HEAT_COLORS[1] : HEAT_COLORS[0];
-                      return <div key={`${b.branch}-${i}`} className={`rounded-lg h-10 ${bg}`} />;
-                    })}
-                  </>
+                  <div
+                    key={i}
+                    className="h-4 flex-1 rounded-md transition-all"
+                    style={{ background: bg, maxWidth: 40 }}
+                  />
                 );
               })}
-            </div>
-            <div className="mt-4 flex items-center gap-3 text-xs font-bold text-muted-foreground">
-              <span>Low</span>
-              {HEAT_COLORS.map((c, i) => <div key={i} className={`h-3 w-6 rounded ${c}`} />)}
-              <span>High</span>
+              <span className="text-xs font-bold text-muted-foreground">High</span>
             </div>
           </>
         )}
