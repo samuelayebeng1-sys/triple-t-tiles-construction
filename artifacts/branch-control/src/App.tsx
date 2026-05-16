@@ -3,6 +3,8 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useGetSettings } from "@workspace/api-client-react";
+import { applyAccentColor } from "@/lib/theme";
 import Layout from "@/components/Layout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -19,6 +21,14 @@ import NotFound from "@/pages/not-found";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } }
 });
+
+function ThemeLoader() {
+  const { data: settings } = useGetSettings();
+  useEffect(() => {
+    if (settings?.accentColor) applyAccentColor(settings.accentColor);
+  }, [settings?.accentColor]);
+  return null;
+}
 
 function AppRoutes({ onLogout }: { onLogout: () => void }) {
   const [, setLocation] = useLocation();
@@ -64,6 +74,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ThemeLoader />
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <AppShell />
         </WouterRouter>

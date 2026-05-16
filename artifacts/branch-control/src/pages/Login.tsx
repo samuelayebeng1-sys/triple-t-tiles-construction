@@ -52,13 +52,13 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
           }}
         />
 
-        {/* Deep background orbs */}
+        {/* Deep background orbs — now driven by --primary */}
         <motion.div
           className="absolute pointer-events-none"
           style={{
             width: 700, height: 700, left: "50%", top: "50%",
             marginLeft: -350, marginTop: -350,
-            background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 65%)",
+            background: "radial-gradient(circle, hsl(var(--primary) / 0.18) 0%, transparent 65%)",
             filter: "blur(60px)",
           }}
           animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.9, 0.5] }}
@@ -68,7 +68,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
           className="absolute pointer-events-none"
           style={{
             width: 400, height: 400, left: "-10%", top: "60%",
-            background: "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)",
+            background: "radial-gradient(circle, hsl(var(--primary) / 0.12) 0%, transparent 70%)",
             filter: "blur(50px)",
           }}
           animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.7, 0.3] }}
@@ -78,7 +78,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
           className="absolute pointer-events-none"
           style={{
             width: 350, height: 350, left: "65%", top: "-5%",
-            background: "radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%)",
+            background: "radial-gradient(circle, hsl(var(--primary) / 0.09) 0%, transparent 70%)",
             filter: "blur(50px)",
           }}
           animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.65, 0.3] }}
@@ -96,12 +96,12 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
           />
         ))}
 
-        {/* Rotating rings — large, slow, dramatic */}
+        {/* Rotating rings */}
         <motion.div
           className="absolute rounded-full pointer-events-none"
           style={{
             width: 640, height: 640, left: "50%", top: "50%", marginLeft: -320, marginTop: -320,
-            border: "1px solid rgba(99,102,241,0.18)",
+            border: "1px solid hsl(var(--primary) / 0.22)",
           }}
           animate={{ rotate: 360 }}
           transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
@@ -119,19 +119,27 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
           className="absolute rounded-full pointer-events-none"
           style={{
             width: 460, height: 460, left: "50%", top: "50%", marginLeft: -230, marginTop: -230,
-            border: "1.5px solid rgba(99,102,241,0.22)",
+            border: "1.5px solid hsl(var(--primary) / 0.28)",
           }}
           animate={{ rotate: 360 }}
           transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
         />
-        {/* Dot on ring */}
+
+        {/* Dot on outer ring — primary coloured */}
         <motion.div
           className="absolute pointer-events-none"
           style={{ width: 640, height: 640, left: "50%", top: "50%", marginLeft: -320, marginTop: -320 }}
           animate={{ rotate: 360 }}
           transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
         >
-          <div className="absolute w-3 h-3 rounded-full bg-indigo-400 shadow-lg shadow-indigo-400/60" style={{ top: -6, left: "50%", marginLeft: -6 }} />
+          <div
+            className="absolute w-3 h-3 rounded-full"
+            style={{
+              top: -6, left: "50%", marginLeft: -6,
+              background: "hsl(var(--primary))",
+              boxShadow: "0 0 12px 4px hsl(var(--primary) / 0.6)",
+            }}
+          />
         </motion.div>
         <motion.div
           className="absolute pointer-events-none"
@@ -170,7 +178,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
                   className="absolute rounded-full blur-3xl pointer-events-none"
                   style={{
                     width: "140%", height: "140%", left: "-20%", top: "-20%",
-                    background: "radial-gradient(circle, rgba(99,102,241,0.45) 0%, transparent 70%)",
+                    background: "radial-gradient(circle, hsl(var(--primary) / 0.45) 0%, transparent 70%)",
                   }}
                   animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -197,7 +205,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
                   className="absolute rounded-full blur-3xl pointer-events-none"
                   style={{
                     width: 400, height: 400, left: "50%", top: "50%", marginLeft: -200, marginTop: -200,
-                    background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 70%)",
+                    background: "radial-gradient(circle, hsl(var(--primary) / 0.40) 0%, transparent 70%)",
                   }}
                   animate={{ scale: [1, 1.35, 1], opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
@@ -206,9 +214,9 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
                 <motion.div
                   className="relative w-64 h-64 rounded-[2.5rem] flex items-center justify-center"
                   style={{
-                    background: "linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(255,255,255,0.05) 100%)",
-                    border: "1.5px solid rgba(255,255,255,0.15)",
-                    boxShadow: "0 0 60px rgba(99,102,241,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
+                    background: "linear-gradient(135deg, hsl(var(--primary) / 0.25) 0%, rgba(255,255,255,0.05) 100%)",
+                    border: "1.5px solid hsl(var(--primary) / 0.30)",
+                    boxShadow: "0 0 60px hsl(var(--primary) / 0.22), inset 0 1px 0 rgba(255,255,255,0.1)",
                   }}
                   animate={{ y: [0, -14, 0], rotate: [0, 0.8, 0, -0.8, 0] }}
                   transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
@@ -226,7 +234,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
             )}
           </AnimatePresence>
 
-          {/* Company name — large and dominant */}
+          {/* Company name */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -238,7 +246,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
             </h1>
             <motion.div
               className="mt-3 mx-auto h-0.5 rounded-full"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(99,102,241,0.8), transparent)" }}
+              style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.85), transparent)" }}
               initial={{ width: 0 }}
               animate={{ width: "80%" }}
               transition={{ delay: 0.9, duration: 0.8, ease: "easeOut" }}
