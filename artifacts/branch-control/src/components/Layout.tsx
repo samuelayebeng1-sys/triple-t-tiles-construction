@@ -4,6 +4,7 @@ import {
   CreditCard, AlertTriangle, Settings, Building2, LogOut, ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGetSettings } from "@workspace/api-client-react";
 
 const NAV = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -19,12 +20,14 @@ const NAV = [
 
 interface LayoutProps {
   children: React.ReactNode;
-  company?: string;
   onLogout: () => void;
 }
 
-export default function Layout({ children, company = "Aseda Building Materials", onLogout }: LayoutProps) {
+export default function Layout({ children, onLogout }: LayoutProps) {
   const [location] = useLocation();
+  const { data: settings } = useGetSettings();
+  const companyName = settings?.companyName || localStorage.getItem("bc_company") || "BranchControl";
+  const logoUrl = settings?.logoUrl || localStorage.getItem("bc_logo") || "";
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -33,9 +36,13 @@ export default function Layout({ children, company = "Aseda Building Materials",
         {/* Brand */}
         <div className="px-6 py-5 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-primary-foreground" />
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="h-9 w-9 rounded-xl object-contain bg-white/10 p-0.5" />
+            ) : (
+              <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-primary-foreground" />
+              </div>
+            )}
             <div>
               <p className="text-sm font-black text-sidebar-foreground tracking-tight">BranchControl</p>
               <p className="text-[10px] font-semibold text-sidebar-foreground/50">by ChalePay</p>
@@ -43,7 +50,7 @@ export default function Layout({ children, company = "Aseda Building Materials",
           </div>
           <div className="mt-3 px-2 py-1.5 bg-sidebar-accent rounded-lg">
             <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40">Business</p>
-            <p className="text-xs font-bold text-sidebar-foreground truncate">{company}</p>
+            <p className="text-xs font-bold text-sidebar-foreground truncate">{companyName}</p>
           </div>
         </div>
 
@@ -75,8 +82,8 @@ export default function Layout({ children, company = "Aseda Building Materials",
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="border-t border-sidebar-border p-3">
+        {/* Footer */}
+        <div className="border-t border-sidebar-border p-3 space-y-1">
           <button
             onClick={onLogout}
             data-testid="button-logout"
@@ -85,6 +92,10 @@ export default function Layout({ children, company = "Aseda Building Materials",
             <LogOut className="h-4 w-4" />
             Sign Out
           </button>
+          <div className="flex items-center justify-center gap-1.5 py-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/60" />
+            <span className="text-[10px] font-bold text-sidebar-foreground/30">Powered by <span className="text-sidebar-foreground/50">ChalePay</span></span>
+          </div>
         </div>
       </aside>
 

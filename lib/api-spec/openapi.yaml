@@ -293,6 +293,95 @@ paths:
                 items:
                   $ref: "#/components/schemas/Issue"
 
+  /suppliers:
+    get:
+      operationId: listSuppliers
+      tags: [settings]
+      summary: List all suppliers
+      responses:
+        "200":
+          description: Suppliers list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Supplier"
+    post:
+      operationId: createSupplier
+      tags: [settings]
+      summary: Add a new supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierInput"
+      responses:
+        "201":
+          description: Supplier created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+
+  /suppliers/{id}:
+    put:
+      operationId: updateSupplier
+      tags: [settings]
+      summary: Update a supplier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierInput"
+      responses:
+        "200":
+          description: Updated supplier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+    delete:
+      operationId: deleteSupplier
+      tags: [settings]
+      summary: Delete a supplier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Supplier deleted
+
+  /stock/adjust:
+    post:
+      operationId: adjustStock
+      tags: [stock]
+      summary: Directly set stock quantity for initial setup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAdjustInput"
+      responses:
+        "200":
+          description: Stock adjusted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockLevel"
+
   /issues/{id}/resolve:
     post:
       operationId: resolveIssue
@@ -684,7 +773,7 @@ components:
 
     Settings:
       type: object
-      required: [companyName, phone, email, tin, location, smsCredit, smsLowStock, smsDaily, smsSenderId]
+      required: [companyName, phone, email, logoUrl, accentColor, smsCredit, smsLowStock, smsDaily, smsSenderId]
       properties:
         companyName:
           type: string
@@ -692,9 +781,9 @@ components:
           type: string
         email:
           type: string
-        tin:
+        logoUrl:
           type: string
-        location:
+        accentColor:
           type: string
         smsCredit:
           type: boolean
@@ -714,9 +803,9 @@ components:
           type: string
         email:
           type: string
-        tin:
+        logoUrl:
           type: string
-        location:
+        accentColor:
           type: string
         smsCredit:
           type: boolean
@@ -726,3 +815,46 @@ components:
           type: boolean
         smsSenderId:
           type: string
+
+    Supplier:
+      type: object
+      required: [id, name, phone, email, contact, notes]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        contact:
+          type: string
+        notes:
+          type: string
+
+    SupplierInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        contact:
+          type: string
+        notes:
+          type: string
+
+    StockAdjustInput:
+      type: object
+      required: [location, productCode, quantity]
+      properties:
+        location:
+          type: string
+        productCode:
+          type: string
+        quantity:
+          type: integer

@@ -257,6 +257,82 @@ export const ListIssuesResponse = zod.array(ListIssuesResponseItem)
 
 
 /**
+ * @summary List all suppliers
+ */
+export const ListSuppliersResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "contact": zod.string(),
+  "notes": zod.string()
+})
+export const ListSuppliersResponse = zod.array(ListSuppliersResponseItem)
+
+
+/**
+ * @summary Add a new supplier
+ */
+export const CreateSupplierBody = zod.object({
+  "name": zod.string(),
+  "phone": zod.string().optional(),
+  "email": zod.string().optional(),
+  "contact": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a supplier
+ */
+export const UpdateSupplierParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSupplierBody = zod.object({
+  "name": zod.string(),
+  "phone": zod.string().optional(),
+  "email": zod.string().optional(),
+  "contact": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+export const UpdateSupplierResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "contact": zod.string(),
+  "notes": zod.string()
+})
+
+
+/**
+ * @summary Delete a supplier
+ */
+export const DeleteSupplierParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Directly set stock quantity for initial setup
+ */
+export const AdjustStockBody = zod.object({
+  "location": zod.string(),
+  "productCode": zod.string(),
+  "quantity": zod.number()
+})
+
+export const AdjustStockResponse = zod.object({
+  "id": zod.number().optional(),
+  "location": zod.string(),
+  "productCode": zod.string(),
+  "quantity": zod.number()
+})
+
+
+/**
  * @summary Mark a stock mismatch as resolved
  */
 export const ResolveIssueParams = zod.object({
@@ -283,8 +359,8 @@ export const GetSettingsResponse = zod.object({
   "companyName": zod.string(),
   "phone": zod.string(),
   "email": zod.string(),
-  "tin": zod.string(),
-  "location": zod.string(),
+  "logoUrl": zod.string(),
+  "accentColor": zod.string(),
   "smsCredit": zod.boolean(),
   "smsLowStock": zod.boolean(),
   "smsDaily": zod.boolean(),
@@ -299,8 +375,8 @@ export const UpdateSettingsBody = zod.object({
   "companyName": zod.string().optional(),
   "phone": zod.string().optional(),
   "email": zod.string().optional(),
-  "tin": zod.string().optional(),
-  "location": zod.string().optional(),
+  "logoUrl": zod.string().optional(),
+  "accentColor": zod.string().optional(),
   "smsCredit": zod.boolean().optional(),
   "smsLowStock": zod.boolean().optional(),
   "smsDaily": zod.boolean().optional(),
@@ -311,8 +387,8 @@ export const UpdateSettingsResponse = zod.object({
   "companyName": zod.string(),
   "phone": zod.string(),
   "email": zod.string(),
-  "tin": zod.string(),
-  "location": zod.string(),
+  "logoUrl": zod.string(),
+  "accentColor": zod.string(),
   "smsCredit": zod.boolean(),
   "smsLowStock": zod.boolean(),
   "smsDaily": zod.boolean(),

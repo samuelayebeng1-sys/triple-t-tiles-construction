@@ -10,8 +10,8 @@ export interface SettingsInput {
   companyName?: string;
   phone?: string;
   email?: string;
-  tin?: string;
-  location?: string;
+  logoUrl?: string;
+  accentColor?: string;
   smsCredit?: boolean;
   smsLowStock?: boolean;
   smsDaily?: boolean;

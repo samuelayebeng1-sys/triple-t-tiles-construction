@@ -4,15 +4,15 @@ import { z } from "zod/v4";
 
 export const settingsTable = pgTable("settings", {
   id: serial("id").primaryKey(),
-  companyName: text("company_name").notNull().default("Aseda Building Materials"),
-  phone: text("phone").notNull().default("030 291 4400"),
-  email: text("email").notNull().default("owner@asedabm.com"),
-  tin: text("tin").notNull().default("GH-TIN-20291"),
-  location: text("location").notNull().default("Accra, Ghana"),
+  companyName: text("company_name").notNull().default("My Building Supplies"),
+  phone: text("phone").notNull().default(""),
+  email: text("email").notNull().default(""),
+  logoUrl: text("logo_url").notNull().default(""),
+  accentColor: text("accent_color").notNull().default("#0f172a"),
   smsCredit: boolean("sms_credit").notNull().default(true),
   smsLowStock: boolean("sms_low_stock").notNull().default(true),
   smsDaily: boolean("sms_daily").notNull().default(false),
-  smsSenderId: text("sms_sender_id").notNull().default("ASEDASTOCK"),
+  smsSenderId: text("sms_sender_id").notNull().default("BRANCHCTRL"),
 });
 
 export const insertSettingsSchema = createInsertSchema(settingsTable).omit({ id: true });

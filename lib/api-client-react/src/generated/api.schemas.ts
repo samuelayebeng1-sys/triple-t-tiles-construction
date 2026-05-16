@@ -185,8 +185,8 @@ export interface Settings {
   companyName: string;
   phone: string;
   email: string;
-  tin: string;
-  location: string;
+  logoUrl: string;
+  accentColor: string;
   smsCredit: boolean;
   smsLowStock: boolean;
   smsDaily: boolean;
@@ -197,11 +197,34 @@ export interface SettingsInput {
   companyName?: string;
   phone?: string;
   email?: string;
-  tin?: string;
-  location?: string;
+  logoUrl?: string;
+  accentColor?: string;
   smsCredit?: boolean;
   smsLowStock?: boolean;
   smsDaily?: boolean;
   smsSenderId?: string;
+}
+
+export interface Supplier {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  contact: string;
+  notes: string;
+}
+
+export interface SupplierInput {
+  name: string;
+  phone?: string;
+  email?: string;
+  contact?: string;
+  notes?: string;
+}
+
+export interface StockAdjustInput {
+  location: string;
+  productCode: string;
+  quantity: number;
 }
 

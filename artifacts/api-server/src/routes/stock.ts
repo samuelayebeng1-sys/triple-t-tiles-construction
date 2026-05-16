@@ -14,6 +14,24 @@ router.get("/stock", async (_req, res): Promise<void> => {
   res.json(GetStockResponse.parse(stock));
 });
 
+router.post("/stock/adjust", async (req, res): Promise<void> => {
+  const { location, productCode, quantity } = req.body;
+  if (!location || !productCode || quantity == null) {
+    res.status(400).json({ error: "location, productCode and quantity are required" });
+    return;
+  }
+  const [updated] = await db
+    .update(stockLevelsTable)
+    .set({ quantity: Number(quantity) })
+    .where(sql`${stockLevelsTable.location} = ${location} AND ${stockLevelsTable.productCode} = ${productCode}`)
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Stock record not found for that location/product" });
+    return;
+  }
+  res.json(updated);
+});
+
 router.post("/stock/transfers", async (req, res): Promise<void> => {
   const parsed = CreateTransferBody.safeParse(req.body);
   if (!parsed.success) {

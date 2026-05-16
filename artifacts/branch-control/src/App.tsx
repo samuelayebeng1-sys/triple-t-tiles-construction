@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,11 +20,10 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } }
 });
 
-function AppRoutes({ onLogout, company }: { onLogout: () => void; company: string }) {
+function AppRoutes({ onLogout }: { onLogout: () => void }) {
   const [, setLocation] = useLocation();
-
   return (
-    <Layout company={company} onLogout={() => { onLogout(); setLocation("/"); }}>
+    <Layout onLogout={() => { onLogout(); setLocation("/"); }}>
       <Switch>
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/entry" component={Entry} />
@@ -43,8 +42,11 @@ function AppRoutes({ onLogout, company }: { onLogout: () => void; company: strin
 
 function AppShell() {
   const [loggedIn, setLoggedIn] = useState(false);
-  const [company] = useState("Aseda Building Materials");
   const [, setLocation] = useLocation();
+
+  // Read company info from localStorage for login screen
+  const logoUrl = localStorage.getItem("bc_logo") || "";
+  const companyName = localStorage.getItem("bc_company") || "";
 
   function handleLogin() {
     setLoggedIn(true);
@@ -52,9 +54,9 @@ function AppShell() {
   }
 
   return !loggedIn ? (
-    <Login onLogin={handleLogin} />
+    <Login onLogin={handleLogin} logoUrl={logoUrl} companyName={companyName} />
   ) : (
-    <AppRoutes onLogout={() => { setLoggedIn(false); setLocation("/"); }} company={company} />
+    <AppRoutes onLogout={() => setLoggedIn(false)} />
   );
 }
 

@@ -9,6 +9,7 @@ import creditsRouter from "./credits";
 import analyticsRouter from "./analytics";
 import issuesRouter from "./issues";
 import settingsRouter from "./settings";
+import suppliersRouter from "./suppliers";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(creditsRouter);
 router.use(analyticsRouter);
 router.use(issuesRouter);
 router.use(settingsRouter);
+router.use(suppliersRouter);
 
 export default router;
