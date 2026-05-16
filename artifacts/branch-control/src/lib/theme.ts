@@ -20,11 +20,31 @@ export function hexToHslValues(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+function isValidHex(hex: string) {
+  return /^#[0-9a-fA-F]{6}$/.test(hex);
+}
+
 export function applyAccentColor(hex: string) {
-  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  if (!isValidHex(hex)) return;
   const hsl = hexToHslValues(hex);
   document.documentElement.style.setProperty("--primary", hsl);
   document.documentElement.style.setProperty("--sidebar-primary", hsl);
   document.documentElement.style.setProperty("--sidebar-primary-foreground", "210 40% 98%");
   document.documentElement.style.setProperty("--ring", hsl);
+}
+
+export function applyLoginGlowColor(hex: string) {
+  if (!isValidHex(hex)) return;
+  document.documentElement.style.setProperty("--login-glow", hex);
+}
+
+export function applyContentBarColor(hex: string) {
+  if (!isValidHex(hex)) return;
+  document.documentElement.style.setProperty("--content-bar", hex);
+}
+
+export function applyAllColors(accentColor: string, loginGlowColor: string, contentBarColor: string) {
+  applyAccentColor(accentColor);
+  applyLoginGlowColor(loginGlowColor);
+  applyContentBarColor(contentBarColor);
 }

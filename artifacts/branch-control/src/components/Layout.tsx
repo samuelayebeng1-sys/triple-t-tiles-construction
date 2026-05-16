@@ -100,8 +100,15 @@ export default function Layout({ children, onLogout }: LayoutProps) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        {children}
+      <main className="flex-1 overflow-y-auto flex flex-col">
+        {/* Accent bar — picks up --content-bar CSS variable set by Interface Customisation */}
+        <div
+          className="h-1 w-full shrink-0"
+          style={{ background: "var(--content-bar, hsl(var(--primary)))" }}
+        />
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
       </main>
     </div>
   );

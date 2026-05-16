@@ -9,6 +9,8 @@ export const settingsTable = pgTable("settings", {
   email: text("email").notNull().default(""),
   logoUrl: text("logo_url").notNull().default(""),
   accentColor: text("accent_color").notNull().default("#0f172a"),
+  loginGlowColor: text("login_glow_color").notNull().default("#7c3aed"),
+  contentBarColor: text("content_bar_color").notNull().default("#0f172a"),
   smsCredit: boolean("sms_credit").notNull().default(true),
   smsLowStock: boolean("sms_low_stock").notNull().default(true),
   smsDaily: boolean("sms_daily").notNull().default(false),

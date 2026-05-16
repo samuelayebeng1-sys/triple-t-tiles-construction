@@ -15,9 +15,9 @@ import {
   Save, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight,
   Building2, Truck, Package, MessageSquare, Palette, Upload, MapPin,
 } from "lucide-react";
-import { applyAccentColor } from "@/lib/theme";
+import { applyAllColors } from "@/lib/theme";
 
-type Section = "business" | "suppliers" | "products" | "locations" | "initialStock" | "sms" | "interface" | null;
+type Section = "business" | "suppliers" | "products" | "locations" | "initialStock" | "sms" | null;
 
 function SectionHeader({ id, open, toggle, icon: Icon, title, desc }: {
   id: Section; open: Section; toggle: (s: Section) => void;
@@ -27,24 +27,21 @@ function SectionHeader({ id, open, toggle, icon: Icon, title, desc }: {
   return (
     <button
       onClick={() => toggle(id)}
-      className="w-full flex items-center gap-4 p-5 text-left hover:bg-muted/30 transition-colors rounded-2xl"
-      data-testid={`section-${id}`}
+      className="w-full flex items-center gap-4 p-5 text-left hover:bg-muted/30 transition-colors rounded-t-2xl"
     >
-      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-        <Icon className="h-5 w-5 text-primary" />
+      <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+        <Icon className="h-4 w-4 text-primary" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-black text-foreground">{title}</p>
+        <p className="font-black text-foreground text-sm">{title}</p>
         <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
-      {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "rotate-90" : ""}`} />
     </button>
   );
 }
 
-function InitialStockPanel({
-  products, locations, stockMap, setStockMap, onSave,
-}: {
+function InitialStockPanel({ products, locations, stockMap, setStockMap, onSave }: {
   products: any[];
   locations: any[];
   stockMap: Record<string, Record<string, string>>;
@@ -165,10 +162,59 @@ function InitialStockPanel({
 const BLANK_PRODUCT = { id: null as number | null, code: "", name: "", category: "", price: "", cost: "", unit: "" };
 const BLANK_LOC = { id: null as number | null, name: "", type: "branch" };
 
+const ACCENT_SWATCHES = ["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be123c","#0e7490","#374151"];
+const GLOW_SWATCHES  = ["#7c3aed","#4f46e5","#0ea5e9","#059669","#dc2626","#db2777","#d97706","#0f172a"];
+const BAR_SWATCHES   = ["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be123c","#0e7490","#374151"];
+
+function ColorZone({
+  label, sub, swatches, value, onChange,
+}: {
+  label: string; sub: string; swatches: string[]; value: string; onChange: (c: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-0.5">{label}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{sub}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <input
+            type="color"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer rounded-xl"
+          />
+          <div
+            className="h-12 w-12 rounded-xl border-2 border-border shadow-sm"
+            style={{ background: value }}
+          />
+        </div>
+        <input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-32 rounded-xl border border-border bg-background px-3 py-2 text-sm font-mono font-semibold outline-none focus:border-primary"
+        />
+      </div>
+      <div className="grid grid-cols-8 gap-1.5">
+        {swatches.map(c => (
+          <button
+            key={c}
+            onClick={() => onChange(c)}
+            title={c}
+            className={`h-7 rounded-lg border-2 transition-all ${value === c ? "border-foreground scale-90" : "border-transparent hover:scale-90"}`}
+            style={{ background: c }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Settings() {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [open, setOpen] = useState<Section>("business");
+  const [open, setOpen] = useState<Section>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: settings, isLoading } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
@@ -187,7 +233,11 @@ export default function Settings() {
   const deleteLocation = useDeleteLocation();
   const { data: stock } = useGetStock({ query: { queryKey: getGetStockQueryKey() } });
 
-  const [profile, setProfile] = useState({ companyName: "", phone: "", email: "", logoUrl: "", accentColor: "#0f172a", smsCredit: true, smsLowStock: true, smsDaily: false, smsSenderId: "BRANCHCTRL" });
+  const [profile, setProfile] = useState({
+    companyName: "", phone: "", email: "", logoUrl: "",
+    accentColor: "#0f172a", loginGlowColor: "#7c3aed", contentBarColor: "#0f172a",
+    smsCredit: true, smsLowStock: true, smsDaily: false, smsSenderId: "BRANCHCTRL",
+  });
   const [supplierForm, setSupplierForm] = useState({ id: null as number | null, name: "", phone: "" });
   const [editingSupp, setEditingSupp] = useState<number | null>(null);
   const [productForm, setProductForm] = useState({ ...BLANK_PRODUCT });
@@ -204,12 +254,14 @@ export default function Settings() {
         email: settings.email,
         logoUrl: settings.logoUrl,
         accentColor: settings.accentColor,
+        loginGlowColor: settings.loginGlowColor,
+        contentBarColor: settings.contentBarColor,
         smsCredit: settings.smsCredit,
         smsLowStock: settings.smsLowStock,
         smsDaily: settings.smsDaily,
         smsSenderId: settings.smsSenderId,
       });
-      applyAccentColor(settings.accentColor);
+      applyAllColors(settings.accentColor, settings.loginGlowColor, settings.contentBarColor);
     }
   }, [settings]);
 
@@ -245,11 +297,21 @@ export default function Settings() {
   function handleSaveProfile() {
     localStorage.setItem("bc_company", profile.companyName);
     localStorage.setItem("bc_logo", profile.logoUrl);
-    applyAccentColor(profile.accentColor);
+    applyAllColors(profile.accentColor, profile.loginGlowColor, profile.contentBarColor);
     updateSettings.mutate({ data: profile }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
-        toast({ title: "Saved", description: "Business profile updated." });
+        toast({ title: "Saved", description: "Settings updated." });
+      }
+    });
+  }
+
+  function handleSaveInterface() {
+    applyAllColors(profile.accentColor, profile.loginGlowColor, profile.contentBarColor);
+    updateSettings.mutate({ data: profile }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+        toast({ title: "Interface saved", description: "Colour settings applied across the app." });
       }
     });
   }
@@ -302,12 +364,8 @@ export default function Settings() {
   function handleSaveProduct() {
     if (!productForm.name || !productForm.code) return;
     const data = {
-      code: productForm.code,
-      name: productForm.name,
-      category: productForm.category,
-      price: Number(productForm.price),
-      cost: Number(productForm.cost),
-      unit: productForm.unit,
+      code: productForm.code, name: productForm.name, category: productForm.category,
+      price: Number(productForm.price), cost: Number(productForm.cost), unit: productForm.unit,
     };
     if (editingProduct != null) {
       updateProduct.mutate({ id: editingProduct, data }, {
@@ -357,373 +415,407 @@ export default function Settings() {
   ];
 
   return (
-    <div className="p-6 space-y-4 max-w-3xl" data-testid="page-settings">
-      <div>
+    <div className="p-6 min-h-full" data-testid="page-settings">
+      {/* Page header */}
+      <div className="mb-6">
         <h1 className="text-2xl font-black text-foreground">Settings</h1>
-        <p className="text-sm text-muted-foreground">Configure your business, products, locations, and interface</p>
+        <p className="text-sm text-muted-foreground">Configure your business, interface, products, and locations</p>
       </div>
 
-      {/* Business Profile */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <SectionHeader id="business" open={open} toggle={toggle} icon={Building2} title="Business Profile" desc="Company name, logo, contact details" />
-        {open === "business" && (
-          <div className="px-6 pb-6 border-t border-border pt-5 space-y-5">
-            <div>
-              <label className={labelClass}>Company Logo</label>
-              <div className="flex items-start gap-4">
-                <div className="h-24 w-24 rounded-2xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-colors" onClick={() => fileRef.current?.click()}>
-                  {profile.logoUrl ? (
-                    <img src={profile.logoUrl} alt="Logo" className="h-full w-full object-contain p-2" />
-                  ) : (
-                    <div className="text-center">
-                      <Upload className="h-6 w-6 text-muted-foreground mx-auto" />
-                      <p className="text-[10px] text-muted-foreground mt-1">Upload</p>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 space-y-2">
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                  <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2.5 text-sm font-bold hover:bg-muted/70 transition-all">
-                    <Upload className="h-4 w-4" /> Upload Logo
-                  </button>
-                  {profile.logoUrl && (
-                    <button onClick={() => { setProfile(f => ({ ...f, logoUrl: "" })); localStorage.removeItem("bc_logo"); }}
-                      className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-100 transition-all">
-                      <X className="h-4 w-4" /> Remove Logo
+      {/* ── Interface Customisation — full-width hero card, always expanded ── */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden mb-5">
+        <div className="flex items-center gap-4 px-6 pt-6 pb-4">
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "hsl(var(--primary) / 0.12)" }}>
+            <Palette className="h-5 w-5" style={{ color: "hsl(var(--primary))" }} />
+          </div>
+          <div>
+            <p className="font-black text-foreground">Interface Customisation</p>
+            <p className="text-xs text-muted-foreground">Pick a colour for each zone — changes preview live, click Save to persist</p>
+          </div>
+        </div>
+
+        <div className="px-6 pb-2 border-t border-border pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Zone 1: Primary Accent */}
+          <ColorZone
+            label="Primary Accent"
+            sub="Buttons, sidebar active highlight, Sign In button and right login panel details"
+            swatches={ACCENT_SWATCHES}
+            value={profile.accentColor}
+            onChange={c => {
+              setProfile(f => ({ ...f, accentColor: c }));
+              applyAllColors(c, profile.loginGlowColor, profile.contentBarColor);
+            }}
+          />
+
+          {/* Zone 2: Login Panel Glow */}
+          <ColorZone
+            label="Login Panel Glow"
+            sub="Left login portal — orbs, rings, icon box and floating particle glow effects"
+            swatches={GLOW_SWATCHES}
+            value={profile.loginGlowColor}
+            onChange={c => {
+              setProfile(f => ({ ...f, loginGlowColor: c }));
+              applyAllColors(profile.accentColor, c, profile.contentBarColor);
+            }}
+          />
+
+          {/* Zone 3: Content Bar */}
+          <ColorZone
+            label="Workspace Accent Bar"
+            sub="Thin coloured stripe at the top of every page after login — visible on every tab"
+            swatches={BAR_SWATCHES}
+            value={profile.contentBarColor}
+            onChange={c => {
+              setProfile(f => ({ ...f, contentBarColor: c }));
+              applyAllColors(profile.accentColor, profile.loginGlowColor, c);
+            }}
+          />
+        </div>
+
+        {/* Live preview strip */}
+        <div className="mx-6 mt-4 mb-5 rounded-xl overflow-hidden border border-border">
+          <div className="h-1 w-full" style={{ background: profile.contentBarColor }} />
+          <div className="flex items-center gap-3 px-4 py-3 bg-muted/30">
+            <div className="h-3 w-3 rounded-full" style={{ background: profile.loginGlowColor }} />
+            <span className="text-xs font-bold text-muted-foreground">Login panel glow</span>
+            <div className="h-3 w-3 rounded-full ml-4" style={{ background: profile.accentColor }} />
+            <span className="text-xs font-bold text-muted-foreground">Primary accent</span>
+            <div className="h-1 flex-1 rounded-full" style={{ background: profile.contentBarColor }} />
+            <span className="text-xs font-bold text-muted-foreground">Content bar</span>
+          </div>
+        </div>
+
+        <div className="px-6 pb-6">
+          <button
+            onClick={handleSaveInterface}
+            disabled={updateSettings.isPending}
+            className="flex items-center gap-2 rounded-xl bg-primary px-8 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {updateSettings.isPending ? "Saving..." : "Save Interface Colours"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── 2-column grid for remaining sections ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+
+        {/* Business Profile */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <SectionHeader id="business" open={open} toggle={toggle} icon={Building2} title="Business Profile" desc="Company name, logo, contact details" />
+          {open === "business" && (
+            <div className="px-6 pb-6 border-t border-border pt-5 space-y-5">
+              <div>
+                <label className={labelClass}>Company Logo</label>
+                <div className="flex items-start gap-4">
+                  <div className="h-24 w-24 rounded-2xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-colors shrink-0" onClick={() => fileRef.current?.click()}>
+                    {profile.logoUrl ? (
+                      <img src={profile.logoUrl} alt="Logo" className="h-full w-full object-contain p-2" />
+                    ) : (
+                      <div className="text-center">
+                        <Upload className="h-6 w-6 text-muted-foreground mx-auto" />
+                        <p className="text-[10px] text-muted-foreground mt-1">Upload</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                    <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2.5 text-sm font-bold hover:bg-muted/70 transition-all">
+                      <Upload className="h-4 w-4" /> Upload Logo
                     </button>
-                  )}
-                  <p className="text-xs text-muted-foreground">PNG, JPG or SVG. Shows on the login screen and reports.</p>
+                    {profile.logoUrl && (
+                      <button onClick={() => { setProfile(f => ({ ...f, logoUrl: "" })); localStorage.removeItem("bc_logo"); }}
+                        className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-100 transition-all">
+                        <X className="h-4 w-4" /> Remove Logo
+                      </button>
+                    )}
+                    <p className="text-xs text-muted-foreground">PNG, JPG or SVG. Shows on the login screen and reports.</p>
+                  </div>
                 </div>
+              </div>
+
+              {isLoading ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className={labelClass}>Company Name</label>
+                    <input data-testid="input-company-name" value={profile.companyName} onChange={e => setProfile(f => ({ ...f, companyName: e.target.value }))} className={inputClass} placeholder="e.g. Aseda Building Materials" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Business Phone</label>
+                    <input data-testid="input-business-phone" value={profile.phone} onChange={e => setProfile(f => ({ ...f, phone: e.target.value }))} className={inputClass} placeholder="030 XXX XXXX" />
+                  </div>
+                </div>
+              )}
+              <div className="flex">
+                <button data-testid="button-save-settings" onClick={handleSaveProfile} disabled={updateSettings.isPending || isLoading}
+                  className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
+                  <Save className="h-4 w-4" /> {updateSettings.isPending ? "Saving..." : "Save Profile"}
+                </button>
               </div>
             </div>
+          )}
+        </div>
 
-            {isLoading ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="md:col-span-2">
-                  <label className={labelClass}>Company Name</label>
-                  <input data-testid="input-company-name" value={profile.companyName} onChange={e => setProfile(f => ({ ...f, companyName: e.target.value }))} className={inputClass} placeholder="e.g. Aseda Building Materials" />
+        {/* SMS & Notifications */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <SectionHeader id="sms" open={open} toggle={toggle} icon={MessageSquare} title="SMS & Notifications" desc="Configure automatic alerts and sender ID" />
+          {open === "sms" && (
+            <div className="px-6 pb-6 border-t border-border pt-5 space-y-3">
+              {smsToggles.map(({ key, label, desc }) => (
+                <div key={key} className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
+                  <div>
+                    <p className="font-bold text-foreground text-sm">{label}</p>
+                    <p className="text-xs text-muted-foreground">{desc}</p>
+                  </div>
+                  <button
+                    onClick={() => setProfile(f => ({ ...f, [key]: !f[key] }))}
+                    className={`relative h-6 w-11 rounded-full transition-all ${profile[key] ? "bg-primary" : "bg-muted-foreground/30"}`}
+                  >
+                    <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${profile[key] ? "left-5.5" : "left-0.5"}`} />
+                  </button>
                 </div>
-                <div>
-                  <label className={labelClass}>Business Phone</label>
-                  <input data-testid="input-business-phone" value={profile.phone} onChange={e => setProfile(f => ({ ...f, phone: e.target.value }))} className={inputClass} placeholder="030 XXX XXXX" />
-                </div>
+              ))}
+              <div>
+                <label className={labelClass}>SMS Sender ID</label>
+                <input value={profile.smsSenderId} onChange={e => setProfile(f => ({ ...f, smsSenderId: e.target.value.toUpperCase().slice(0, 11) }))} className={inputClass} placeholder="BRANCHCTRL" maxLength={11} />
+                <p className="text-xs text-muted-foreground mt-1">Max 11 characters, letters and numbers only.</p>
               </div>
-            )}
-            <div className="flex">
-              <button data-testid="button-save-settings" onClick={handleSaveProfile} disabled={updateSettings.isPending || isLoading}
+              <button onClick={handleSaveProfile} disabled={updateSettings.isPending}
                 className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
-                <Save className="h-4 w-4" /> {updateSettings.isPending ? "Saving..." : "Save Profile"}
+                <Save className="h-4 w-4" /> Save SMS Settings
               </button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Interface */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <SectionHeader id="interface" open={open} toggle={toggle} icon={Palette} title="Interface Customisation" desc="Accent colour, branding preferences" />
-        {open === "interface" && (
-          <div className="px-6 pb-6 border-t border-border pt-5 space-y-4">
-            <div>
-              <label className={labelClass}>Primary Accent Colour</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={profile.accentColor}
-                  onChange={e => {
-                    const c = e.target.value;
-                    setProfile(f => ({ ...f, accentColor: c }));
-                    applyAccentColor(c);
-                  }}
-                  className="h-12 w-12 rounded-xl border border-border cursor-pointer bg-background"
-                />
-                <input
-                  value={profile.accentColor}
-                  onChange={e => {
-                    const c = e.target.value;
-                    setProfile(f => ({ ...f, accentColor: c }));
-                    applyAccentColor(c);
-                  }}
-                  className="w-40 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-mono font-semibold outline-none focus:border-primary"
-                />
-                <div className="h-10 w-10 rounded-xl shrink-0" style={{ background: profile.accentColor }} />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Colour used for primary buttons and active navigation. Changes apply instantly.</p>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be123c","#0e7490","#374151"].map(c => (
-                <button key={c}
-                  onClick={() => { setProfile(f => ({ ...f, accentColor: c })); applyAccentColor(c); }}
-                  className={`h-10 rounded-xl border-2 transition-all ${profile.accentColor === c ? "border-foreground scale-95" : "border-transparent hover:scale-95"}`}
-                  style={{ background: c }} />
-              ))}
-            </div>
-            <button onClick={handleSaveProfile} disabled={updateSettings.isPending}
-              className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
-              <Save className="h-4 w-4" /> Save Interface
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Products */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <SectionHeader id="products" open={open} toggle={toggle} icon={Package} title="Products" desc="Add, edit and remove your product catalogue" />
-        {open === "products" && (
-          <div className="px-6 pb-6 border-t border-border pt-5 space-y-4">
-            <div className="rounded-xl bg-muted/40 p-4">
-              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">{editingProduct ? "Edit Product" : "Add New Product"}</p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Item Code *</label>
-                  <input value={productForm.code} onChange={e => setProductForm(f => ({ ...f, code: e.target.value }))} className={inputClass} placeholder="e.g. CEM-001" />
+        {/* Branches & Warehouses */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <SectionHeader id="locations" open={open} toggle={toggle} icon={MapPin} title="Branches & Warehouses" desc="Manage your sales branches and storage locations" />
+          {open === "locations" && (
+            <div className="px-6 pb-6 border-t border-border pt-5 space-y-4">
+              <div className="rounded-xl bg-muted/40 p-4">
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">{editingLocation ? "Edit Location" : "Add New Location"}</p>
+                <div className="grid gap-3 grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Name *</label>
+                    <input value={locationForm.name} onChange={e => setLocationForm(f => ({ ...f, name: e.target.value }))} className={inputClass} placeholder="e.g. Tema or East Warehouse" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Type</label>
+                    <select value={locationForm.type} onChange={e => setLocationForm(f => ({ ...f, type: e.target.value }))} className={inputClass}>
+                      <option value="branch">Branch (Showroom)</option>
+                      <option value="warehouse">Warehouse</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className={labelClass}>Name *</label>
-                  <input value={productForm.name} onChange={e => setProductForm(f => ({ ...f, name: e.target.value }))} className={inputClass} placeholder="e.g. Dangote Cement 50kg" />
-                </div>
-                <div>
-                  <label className={labelClass}>Category</label>
-                  <input value={productForm.category} onChange={e => setProductForm(f => ({ ...f, category: e.target.value }))} className={inputClass} placeholder="e.g. Cement" />
-                </div>
-                <div>
-                  <label className={labelClass}>Unit</label>
-                  <input value={productForm.unit} onChange={e => setProductForm(f => ({ ...f, unit: e.target.value }))} className={inputClass} placeholder="e.g. bag, piece, roll" />
-                </div>
-                <div>
-                  <label className={labelClass}>Selling Price (GH₵)</label>
-                  <input type="number" min="0" value={productForm.price} onChange={e => setProductForm(f => ({ ...f, price: e.target.value }))} className={inputClass} placeholder="0.00" />
-                </div>
-                <div>
-                  <label className={labelClass}>Cost Price (GH₵)</label>
-                  <input type="number" min="0" value={productForm.cost} onChange={e => setProductForm(f => ({ ...f, cost: e.target.value }))} className={inputClass} placeholder="0.00" />
-                </div>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <button onClick={handleSaveProduct} disabled={!productForm.name || !productForm.code || createProduct.isPending || updateProduct.isPending}
-                  className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
-                  <Save className="h-4 w-4" /> {editingProduct ? "Update Product" : "Add Product"}
-                </button>
-                {editingProduct && (
-                  <button onClick={resetProductForm} className="rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold hover:bg-muted transition-all">
-                    Cancel
+                <div className="mt-3 flex gap-2">
+                  <button onClick={handleSaveLocation} disabled={!locationForm.name || createLocation.isPending || updateLocation.isPending}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
+                    <Save className="h-4 w-4" /> {editingLocation ? "Update Location" : "Add Location"}
                   </button>
-                )}
+                  {editingLocation && (
+                    <button onClick={resetLocationForm} className="rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold hover:bg-muted transition-all">
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {!products ? (
-              <div className="space-y-2"><Skeleton className="h-14 w-full rounded-xl" /><Skeleton className="h-14 w-full rounded-xl" /></div>
-            ) : !products.length ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No products yet. Add your first one above.</p>
-            ) : (
-              <div className="space-y-2">
-                {products.map(p => (
-                  <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-black text-foreground text-sm">{p.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{p.code}</span>
-                        <span className="text-muted-foreground/40">·</span>
-                        <span className="text-xs text-muted-foreground">{p.category}</span>
-                        <span className="text-muted-foreground/40">·</span>
-                        <span className="text-xs text-muted-foreground">{p.unit}</span>
-                        <span className="text-muted-foreground/40">·</span>
-                        <span className="text-xs font-bold text-emerald-600">GH₵{p.price.toFixed(2)}</span>
+              {!locations ? (
+                <div className="space-y-2"><Skeleton className="h-14 w-full rounded-xl" /><Skeleton className="h-14 w-full rounded-xl" /></div>
+              ) : !locations.length ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No locations yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {["branch", "warehouse"].map(type => {
+                    const group = locations.filter(l => l.type === type);
+                    if (!group.length) return null;
+                    return (
+                      <div key={type}>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">{type === "branch" ? "Branches / Showrooms" : "Warehouses"}</p>
+                        {group.map(l => (
+                          <div key={l.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3 mb-2">
+                            <div>
+                              <p className="font-black text-foreground text-sm">{l.name}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{l.type}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => handleEditLocation(l)} className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold hover:bg-muted/70 flex items-center gap-1">
+                                <Pencil className="h-3 w-3" /> Edit
+                              </button>
+                              <button onClick={() => handleDeleteLocation(l.id)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 flex items-center gap-1">
+                                <Trash2 className="h-3 w-3" /> Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Suppliers */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <SectionHeader id="suppliers" open={open} toggle={toggle} icon={Truck} title="Suppliers" desc="Add, edit and remove your suppliers" />
+          {open === "suppliers" && (
+            <div className="px-6 pb-6 border-t border-border pt-5 space-y-4">
+              <div className="rounded-xl bg-muted/40 p-4">
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">{editingSupp ? "Edit Supplier" : "Add New Supplier"}</p>
+                <div className="grid gap-3 grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Name *</label>
+                    <input value={supplierForm.name} onChange={e => setSupplierForm(f => ({ ...f, name: e.target.value }))} className={inputClass} placeholder="e.g. Dangote Cement" data-testid="input-supplier-name" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Phone</label>
+                    <input value={supplierForm.phone} onChange={e => setSupplierForm(f => ({ ...f, phone: e.target.value }))} className={inputClass} placeholder="050 XXX XXXX" />
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button data-testid="button-save-supplier" onClick={handleSaveSupplier} disabled={!supplierForm.name || createSupplier.isPending || updateSupplier.isPending}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
+                    <Save className="h-4 w-4" /> {editingSupp ? "Update" : "Add Supplier"}
+                  </button>
+                  {editingSupp && (
+                    <button onClick={resetSupplierForm} className="rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold hover:bg-muted transition-all">
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {suppLoading ? (
+                <div className="space-y-2"><Skeleton className="h-14 w-full rounded-xl" /><Skeleton className="h-14 w-full rounded-xl" /></div>
+              ) : !suppliers?.length ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No suppliers added yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {suppliers.map(s => (
+                    <div key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
+                      <div>
+                        <p className="font-black text-foreground text-sm">{s.name}</p>
+                        <p className="text-xs text-muted-foreground">{s.phone || "No phone"}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleEditSupplier(s)} className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold hover:bg-muted/70 flex items-center gap-1">
+                          <Pencil className="h-3 w-3" /> Edit
+                        </button>
+                        <button onClick={() => handleDeleteSupplier(s.id)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 flex items-center gap-1">
+                          <Trash2 className="h-3 w-3" /> Delete
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button onClick={() => handleEditProduct(p)} className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold hover:bg-muted/70 flex items-center gap-1">
-                        <Pencil className="h-3 w-3" /> Edit
-                      </button>
-                      <button onClick={() => handleDeleteProduct(p.id)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 flex items-center gap-1">
-                        <Trash2 className="h-3 w-3" /> Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Locations */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <SectionHeader id="locations" open={open} toggle={toggle} icon={MapPin} title="Branches & Warehouses" desc="Manage your sales branches and storage locations" />
-        {open === "locations" && (
-          <div className="px-6 pb-6 border-t border-border pt-5 space-y-4">
-            <div className="rounded-xl bg-muted/40 p-4">
-              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">{editingLocation ? "Edit Location" : "Add New Location"}</p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Name *</label>
-                  <input value={locationForm.name} onChange={e => setLocationForm(f => ({ ...f, name: e.target.value }))} className={inputClass} placeholder="e.g. Tema or East Warehouse" />
+                  ))}
                 </div>
-                <div>
-                  <label className={labelClass}>Type</label>
-                  <select value={locationForm.type} onChange={e => setLocationForm(f => ({ ...f, type: e.target.value }))} className={inputClass}>
-                    <option value="branch">Branch (Showroom)</option>
-                    <option value="warehouse">Warehouse</option>
-                  </select>
-                </div>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <button onClick={handleSaveLocation} disabled={!locationForm.name || createLocation.isPending || updateLocation.isPending}
-                  className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
-                  <Save className="h-4 w-4" /> {editingLocation ? "Update Location" : "Add Location"}
-                </button>
-                {editingLocation && (
-                  <button onClick={resetLocationForm} className="rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold hover:bg-muted transition-all">
-                    Cancel
-                  </button>
-                )}
-              </div>
+              )}
             </div>
+          )}
+        </div>
 
-            {!locations ? (
-              <div className="space-y-2"><Skeleton className="h-14 w-full rounded-xl" /><Skeleton className="h-14 w-full rounded-xl" /></div>
-            ) : !locations.length ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No locations yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {["branch", "warehouse"].map(type => {
-                  const group = locations.filter(l => l.type === type);
-                  if (!group.length) return null;
-                  return (
-                    <div key={type}>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">{type === "branch" ? "Branches / Showrooms" : "Warehouses"}</p>
-                      {group.map(l => (
-                        <div key={l.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3 mb-2">
-                          <div>
-                            <p className="font-black text-foreground text-sm">{l.name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{l.type}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => handleEditLocation(l)} className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold hover:bg-muted/70 flex items-center gap-1">
-                              <Pencil className="h-3 w-3" /> Edit
-                            </button>
-                            <button onClick={() => handleDeleteLocation(l.id)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 flex items-center gap-1">
-                              <Trash2 className="h-3 w-3" /> Delete
-                            </button>
-                          </div>
+        {/* Products — full width */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden xl:col-span-2">
+          <SectionHeader id="products" open={open} toggle={toggle} icon={Package} title="Products" desc="Add, edit and remove your product catalogue" />
+          {open === "products" && (
+            <div className="px-6 pb-6 border-t border-border pt-5 space-y-4">
+              <div className="rounded-xl bg-muted/40 p-4">
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">{editingProduct ? "Edit Product" : "Add New Product"}</p>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div>
+                    <label className={labelClass}>Item Code *</label>
+                    <input value={productForm.code} onChange={e => setProductForm(f => ({ ...f, code: e.target.value }))} className={inputClass} placeholder="e.g. CEM-001" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Name *</label>
+                    <input value={productForm.name} onChange={e => setProductForm(f => ({ ...f, name: e.target.value }))} className={inputClass} placeholder="e.g. Dangote Cement 50kg" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Category</label>
+                    <input value={productForm.category} onChange={e => setProductForm(f => ({ ...f, category: e.target.value }))} className={inputClass} placeholder="e.g. Cement" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Unit</label>
+                    <input value={productForm.unit} onChange={e => setProductForm(f => ({ ...f, unit: e.target.value }))} className={inputClass} placeholder="e.g. bag, piece, roll" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Selling Price (GH₵)</label>
+                    <input type="number" min="0" value={productForm.price} onChange={e => setProductForm(f => ({ ...f, price: e.target.value }))} className={inputClass} placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Cost Price (GH₵)</label>
+                    <input type="number" min="0" value={productForm.cost} onChange={e => setProductForm(f => ({ ...f, cost: e.target.value }))} className={inputClass} placeholder="0.00" />
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button onClick={handleSaveProduct} disabled={!productForm.name || !productForm.code || createProduct.isPending || updateProduct.isPending}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
+                    <Save className="h-4 w-4" /> {editingProduct ? "Update Product" : "Add Product"}
+                  </button>
+                  {editingProduct && (
+                    <button onClick={resetProductForm} className="rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold hover:bg-muted transition-all">
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {!products ? (
+                <div className="space-y-2"><Skeleton className="h-14 w-full rounded-xl" /><Skeleton className="h-14 w-full rounded-xl" /></div>
+              ) : !products.length ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No products yet. Add your first one above.</p>
+              ) : (
+                <div className="grid gap-2 md:grid-cols-2">
+                  {products.map(p => (
+                    <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-foreground text-sm">{p.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{p.code}</span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-xs text-muted-foreground">{p.category}</span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-xs text-muted-foreground">{p.unit}</span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-xs font-bold text-emerald-600">GH₵{p.price.toFixed(2)}</span>
                         </div>
-                      ))}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => handleEditProduct(p)} className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold hover:bg-muted/70 flex items-center gap-1">
+                          <Pencil className="h-3 w-3" /> Edit
+                        </button>
+                        <button onClick={() => handleDeleteProduct(p.id)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 flex items-center gap-1">
+                          <Trash2 className="h-3 w-3" /> Delete
+                        </button>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Suppliers */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <SectionHeader id="suppliers" open={open} toggle={toggle} icon={Truck} title="Suppliers" desc="Add, edit and remove your suppliers" />
-        {open === "suppliers" && (
-          <div className="px-6 pb-6 border-t border-border pt-5 space-y-4">
-            <div className="rounded-xl bg-muted/40 p-4">
-              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">{editingSupp ? "Edit Supplier" : "Add New Supplier"}</p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Name *</label>
-                  <input value={supplierForm.name} onChange={e => setSupplierForm(f => ({ ...f, name: e.target.value }))} className={inputClass} placeholder="e.g. Dangote Cement" data-testid="input-supplier-name" />
+                  ))}
                 </div>
-                <div>
-                  <label className={labelClass}>Phone</label>
-                  <input value={supplierForm.phone} onChange={e => setSupplierForm(f => ({ ...f, phone: e.target.value }))} className={inputClass} placeholder="050 XXX XXXX" />
-                </div>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <button data-testid="button-save-supplier" onClick={handleSaveSupplier} disabled={!supplierForm.name || createSupplier.isPending || updateSupplier.isPending}
-                  className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
-                  <Save className="h-4 w-4" /> {editingSupp ? "Update" : "Add Supplier"}
-                </button>
-                {editingSupp && (
-                  <button onClick={resetSupplierForm} className="rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold hover:bg-muted transition-all">
-                    Cancel
-                  </button>
-                )}
-              </div>
+              )}
             </div>
+          )}
+        </div>
 
-            {suppLoading ? (
-              <div className="space-y-2"><Skeleton className="h-14 w-full rounded-xl" /><Skeleton className="h-14 w-full rounded-xl" /></div>
-            ) : !suppliers?.length ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No suppliers added yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {suppliers.map(s => (
-                  <div key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
-                    <div>
-                      <p className="font-black text-foreground text-sm">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">{s.phone || "No phone"}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleEditSupplier(s)} className="rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-bold hover:bg-muted/70 flex items-center gap-1">
-                        <Pencil className="h-3 w-3" /> Edit
-                      </button>
-                      <button onClick={() => handleDeleteSupplier(s.id)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 flex items-center gap-1">
-                        <Trash2 className="h-3 w-3" /> Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Initial Stock Setup — full width */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden xl:col-span-2">
+          <SectionHeader id="initialStock" open={open} toggle={toggle} icon={Package} title="Initial Stock Setup" desc="Set opening stock quantities before going live" />
+          {open === "initialStock" && (
+            <InitialStockPanel
+              products={products ?? []}
+              locations={locations ?? []}
+              stockMap={stockMap}
+              setStockMap={setStockMap}
+              onSave={handleStockSave}
+            />
+          )}
+        </div>
 
-      {/* Initial Stock Setup */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <SectionHeader id="initialStock" open={open} toggle={toggle} icon={Package} title="Initial Stock Setup" desc="Set opening stock quantities before going live" />
-        {open === "initialStock" && (
-          <InitialStockPanel
-            products={products ?? []}
-            locations={locations ?? []}
-            stockMap={stockMap}
-            setStockMap={setStockMap}
-            onSave={handleStockSave}
-          />
-        )}
-      </div>
-
-      {/* SMS */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <SectionHeader id="sms" open={open} toggle={toggle} icon={MessageSquare} title="SMS & Notifications" desc="Configure automatic alerts and sender ID" />
-        {open === "sms" && (
-          <div className="px-6 pb-6 border-t border-border pt-5 space-y-3">
-            {smsToggles.map(({ key, label, desc }) => (
-              <div key={key} className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
-                <div>
-                  <p className="font-bold text-foreground text-sm">{label}</p>
-                  <p className="text-xs text-muted-foreground">{desc}</p>
-                </div>
-                <button
-                  onClick={() => setProfile(f => ({ ...f, [key]: !f[key] }))}
-                  className={`relative h-6 w-11 rounded-full transition-all ${profile[key] ? "bg-primary" : "bg-muted-foreground/30"}`}
-                >
-                  <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${profile[key] ? "left-5.5" : "left-0.5"}`} />
-                </button>
-              </div>
-            ))}
-            <div>
-              <label className={labelClass}>SMS Sender ID</label>
-              <input value={profile.smsSenderId} onChange={e => setProfile(f => ({ ...f, smsSenderId: e.target.value.toUpperCase().slice(0, 11) }))} className={inputClass} placeholder="BRANCHCTRL" maxLength={11} />
-              <p className="text-xs text-muted-foreground mt-1">Max 11 characters, letters and numbers only.</p>
-            </div>
-            <button onClick={handleSaveProfile} disabled={updateSettings.isPending}
-              className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
-              <Save className="h-4 w-4" /> Save SMS Settings
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

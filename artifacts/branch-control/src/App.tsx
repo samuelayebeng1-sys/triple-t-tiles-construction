@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useGetSettings } from "@workspace/api-client-react";
-import { applyAccentColor } from "@/lib/theme";
+import { applyAllColors } from "@/lib/theme";
 import Layout from "@/components/Layout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -25,8 +25,14 @@ const queryClient = new QueryClient({
 function ThemeLoader() {
   const { data: settings } = useGetSettings();
   useEffect(() => {
-    if (settings?.accentColor) applyAccentColor(settings.accentColor);
-  }, [settings?.accentColor]);
+    if (settings) {
+      applyAllColors(
+        settings.accentColor,
+        settings.loginGlowColor,
+        settings.contentBarColor,
+      );
+    }
+  }, [settings?.accentColor, settings?.loginGlowColor, settings?.contentBarColor]);
   return null;
 }
 

@@ -12,6 +12,8 @@ export interface SettingsInput {
   email?: string;
   logoUrl?: string;
   accentColor?: string;
+  loginGlowColor?: string;
+  contentBarColor?: string;
   smsCredit?: boolean;
   smsLowStock?: boolean;
   smsDaily?: boolean;
