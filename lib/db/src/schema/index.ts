@@ -5,3 +5,4 @@ export * from "./credits";
 export * from "./issues";
 export * from "./settings";
 export * from "./suppliers";
+export * from "./locations";

@@ -19,6 +19,26 @@ export interface Product {
   unit: string;
 }
 
+export interface ProductInput {
+  code: string;
+  name: string;
+  category: string;
+  price: number;
+  cost: number;
+  unit: string;
+}
+
+export interface Location {
+  id: number;
+  name: string;
+  type: string;
+}
+
+export interface LocationInput {
+  name: string;
+  type: string;
+}
+
 export interface StockLevel {
   id?: number;
   location: string;

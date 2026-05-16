@@ -32,6 +32,101 @@ export const ListProductsResponse = zod.array(ListProductsResponseItem)
 
 
 /**
+ * @summary Create a new product
+ */
+export const CreateProductBody = zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "price": zod.number(),
+  "cost": zod.number(),
+  "unit": zod.string()
+})
+
+
+/**
+ * @summary Update a product
+ */
+export const UpdateProductParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateProductBody = zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "price": zod.number(),
+  "cost": zod.number(),
+  "unit": zod.string()
+})
+
+export const UpdateProductResponse = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "price": zod.number(),
+  "cost": zod.number(),
+  "unit": zod.string()
+})
+
+
+/**
+ * @summary Delete a product
+ */
+export const DeleteProductParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List all locations
+ */
+export const ListLocationsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "type": zod.string()
+})
+export const ListLocationsResponse = zod.array(ListLocationsResponseItem)
+
+
+/**
+ * @summary Create a location
+ */
+export const CreateLocationBody = zod.object({
+  "name": zod.string(),
+  "type": zod.string()
+})
+
+
+/**
+ * @summary Update a location
+ */
+export const UpdateLocationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateLocationBody = zod.object({
+  "name": zod.string(),
+  "type": zod.string()
+})
+
+export const UpdateLocationResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "type": zod.string()
+})
+
+
+/**
+ * @summary Delete a location
+ */
+export const DeleteLocationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get stock levels for all locations
  */
 export const GetStockResponseItem = zod.object({

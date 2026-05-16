@@ -25,6 +25,8 @@ tags:
     description: Stock mismatches
   - name: settings
     description: Business settings
+  - name: locations
+    description: Branches and warehouses
 paths:
   /healthz:
     get:
@@ -53,6 +55,131 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    put:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Delete a product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /locations:
+    get:
+      operationId: listLocations
+      tags: [locations]
+      summary: List all locations
+      responses:
+        "200":
+          description: Location list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Location"
+    post:
+      operationId: createLocation
+      tags: [locations]
+      summary: Create a location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+
+  /locations/{id}:
+    put:
+      operationId: updateLocation
+      tags: [locations]
+      summary: Update a location
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+    delete:
+      operationId: deleteLocation
+      tags: [locations]
+      summary: Delete a location
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   /stock:
     get:
@@ -457,6 +584,43 @@ components:
         cost:
           type: number
         unit:
+          type: string
+
+    ProductInput:
+      type: object
+      required: [code, name, category, price, cost, unit]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        cost:
+          type: number
+        unit:
+          type: string
+
+    Location:
+      type: object
+      required: [id, name, type]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+
+    LocationInput:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
           type: string
 
     StockLevel:

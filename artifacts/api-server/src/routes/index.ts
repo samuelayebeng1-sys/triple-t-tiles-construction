@@ -10,11 +10,13 @@ import analyticsRouter from "./analytics";
 import issuesRouter from "./issues";
 import settingsRouter from "./settings";
 import suppliersRouter from "./suppliers";
+import locationsRouter from "./locations";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(productsRouter);
+router.use(locationsRouter);
 router.use(stockRouter);
 router.use(entriesRouter);
 router.use(reportsRouter);
