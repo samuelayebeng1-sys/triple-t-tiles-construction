@@ -49,6 +49,7 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     date: new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" }),
     cash: e.totalCash,
     momo: e.totalMomo,
+    bank: e.totalBank ?? 0,
     credit: e.totalCredit,
     total: e.totalAmount,
     profit: e.totalProfit,

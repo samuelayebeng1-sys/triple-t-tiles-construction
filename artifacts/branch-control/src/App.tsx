@@ -16,6 +16,7 @@ import Analytics from "@/pages/Analytics";
 import Credits from "@/pages/Credits";
 import Issues from "@/pages/Issues";
 import SettingsPage from "@/pages/Settings";
+import HistoryPage from "@/pages/History";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -52,6 +53,7 @@ function AppRoutes({ onLogout }: { onLogout: () => void }) {
         <Route path="/warehouses" component={Warehouses} />
         <Route path="/reports" component={Reports} />
         <Route path="/analytics" component={Analytics} />
+        <Route path="/history" component={HistoryPage} />
         <Route path="/credit" component={Credits} />
         <Route path="/issues" component={Issues} />
         <Route path="/settings" component={SettingsPage} />

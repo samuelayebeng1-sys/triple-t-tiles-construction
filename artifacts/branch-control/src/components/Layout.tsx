@@ -1,21 +1,22 @@
 import { useLocation, Link } from "wouter";
 import {
   LayoutDashboard, BookOpen, Search, Warehouse, BarChart2, TrendingUp,
-  CreditCard, AlertTriangle, Settings, Building2, LogOut, ChevronRight
+  CreditCard, AlertTriangle, Settings, Building2, LogOut, ChevronRight, History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGetSettings } from "@workspace/api-client-react";
 
 const NAV = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/entry", label: "Enter Book", icon: BookOpen },
-  { path: "/stock", label: "Stock Search", icon: Search },
-  { path: "/warehouses", label: "Warehouses", icon: Warehouse },
-  { path: "/reports", label: "Reports", icon: BarChart2 },
-  { path: "/analytics", label: "Analytics", icon: TrendingUp },
-  { path: "/credit", label: "Credit Book", icon: CreditCard },
-  { path: "/issues", label: "Mismatches", icon: AlertTriangle },
-  { path: "/settings", label: "Settings", icon: Settings },
+  { path: "/dashboard",  label: "Dashboard",   icon: LayoutDashboard },
+  { path: "/entry",      label: "Enter Book",   icon: BookOpen },
+  { path: "/stock",      label: "Stock Search", icon: Search },
+  { path: "/warehouses", label: "Warehouses",   icon: Warehouse },
+  { path: "/reports",    label: "Reports",      icon: BarChart2 },
+  { path: "/analytics",  label: "Analytics",    icon: TrendingUp },
+  { path: "/history",    label: "History",      icon: History },
+  { path: "/credit",     label: "Credit Book",  icon: CreditCard },
+  { path: "/issues",     label: "Mismatches",   icon: AlertTriangle },
+  { path: "/settings",   label: "Settings",     icon: Settings },
 ];
 
 interface LayoutProps {
