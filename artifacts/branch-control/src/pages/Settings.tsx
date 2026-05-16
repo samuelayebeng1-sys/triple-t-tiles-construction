@@ -15,7 +15,7 @@ import {
   Save, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight,
   Building2, Truck, Package, MessageSquare, Palette, Upload, MapPin,
 } from "lucide-react";
-import { applyAllColors } from "@/lib/theme";
+import { applyAllColors, applyAccentColor, applyLoginGlowColor, applyContentBarColor, applySidebarColor, applyLoginRightBg, applyContentBg } from "@/lib/theme";
 
 type Section = "business" | "suppliers" | "products" | "locations" | "initialStock" | "sms" | null;
 
@@ -162,9 +162,12 @@ function InitialStockPanel({ products, locations, stockMap, setStockMap, onSave 
 const BLANK_PRODUCT = { id: null as number | null, code: "", name: "", category: "", price: "", cost: "", unit: "" };
 const BLANK_LOC = { id: null as number | null, name: "", type: "branch" };
 
-const ACCENT_SWATCHES = ["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be123c","#0e7490","#374151"];
-const GLOW_SWATCHES  = ["#7c3aed","#4f46e5","#0ea5e9","#059669","#dc2626","#db2777","#d97706","#0f172a"];
-const BAR_SWATCHES   = ["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be123c","#0e7490","#374151"];
+const ACCENT_SWATCHES  = ["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be123c","#0e7490","#374151"];
+const GLOW_SWATCHES    = ["#7c3aed","#4f46e5","#0ea5e9","#059669","#dc2626","#db2777","#d97706","#0f172a"];
+const BAR_SWATCHES     = ["#0f172a","#1d4ed8","#15803d","#b45309","#7c3aed","#be123c","#0e7490","#374151"];
+const SIDEBAR_SWATCHES = ["#0f172a","#1e1b4b","#14532d","#431407","#3b0764","#4c0519","#083344","#18181b"];
+const RIGHT_SWATCHES   = ["#f8fafc","#ffffff","#fef9f0","#f0fdf4","#fdf4ff","#fff1f2","#f0f9ff","#1a1a2e"];
+const CONTENT_SWATCHES = ["#f1f5f9","#ffffff","#fefce8","#f0fdf4","#faf5ff","#fff1f2","#f0f9ff","#0f172a"];
 
 function ColorZone({
   label, sub, swatches, value, onChange,
@@ -236,6 +239,7 @@ export default function Settings() {
   const [profile, setProfile] = useState({
     companyName: "", phone: "", email: "", logoUrl: "",
     accentColor: "#0f172a", loginGlowColor: "#7c3aed", contentBarColor: "#0f172a",
+    sidebarColor: "#0f172a", loginRightBg: "#f8fafc", contentBg: "#f1f5f9",
     smsCredit: true, smsLowStock: true, smsDaily: false, smsSenderId: "BRANCHCTRL",
   });
   const [supplierForm, setSupplierForm] = useState({ id: null as number | null, name: "", phone: "" });
@@ -256,12 +260,22 @@ export default function Settings() {
         accentColor: settings.accentColor,
         loginGlowColor: settings.loginGlowColor,
         contentBarColor: settings.contentBarColor,
+        sidebarColor: settings.sidebarColor,
+        loginRightBg: settings.loginRightBg,
+        contentBg: settings.contentBg,
         smsCredit: settings.smsCredit,
         smsLowStock: settings.smsLowStock,
         smsDaily: settings.smsDaily,
         smsSenderId: settings.smsSenderId,
       });
-      applyAllColors(settings.accentColor, settings.loginGlowColor, settings.contentBarColor);
+      applyAllColors({
+        accentColor: settings.accentColor,
+        loginGlowColor: settings.loginGlowColor,
+        contentBarColor: settings.contentBarColor,
+        sidebarColor: settings.sidebarColor,
+        loginRightBg: settings.loginRightBg,
+        contentBg: settings.contentBg,
+      });
     }
   }, [settings]);
 
@@ -297,7 +311,7 @@ export default function Settings() {
   function handleSaveProfile() {
     localStorage.setItem("bc_company", profile.companyName);
     localStorage.setItem("bc_logo", profile.logoUrl);
-    applyAllColors(profile.accentColor, profile.loginGlowColor, profile.contentBarColor);
+    applyAllColors(profile);
     updateSettings.mutate({ data: profile }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
@@ -307,7 +321,7 @@ export default function Settings() {
   }
 
   function handleSaveInterface() {
-    applyAllColors(profile.accentColor, profile.loginGlowColor, profile.contentBarColor);
+    applyAllColors(profile);
     updateSettings.mutate({ data: profile }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
@@ -434,54 +448,76 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="px-6 pb-2 border-t border-border pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Row 1 */}
+        <div className="px-6 pb-0 border-t border-border pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Zone 1: Primary Accent */}
           <ColorZone
             label="Primary Accent"
-            sub="Buttons, sidebar active highlight, Sign In button and right login panel details"
+            sub="Buttons, active nav item, Sign In button, right panel labels"
             swatches={ACCENT_SWATCHES}
             value={profile.accentColor}
-            onChange={c => {
-              setProfile(f => ({ ...f, accentColor: c }));
-              applyAllColors(c, profile.loginGlowColor, profile.contentBarColor);
-            }}
+            onChange={c => { setProfile(f => ({ ...f, accentColor: c })); applyAccentColor(c); }}
           />
-
           {/* Zone 2: Login Panel Glow */}
           <ColorZone
-            label="Login Panel Glow"
-            sub="Left login portal — orbs, rings, icon box and floating particle glow effects"
+            label="Login Left Panel Glow"
+            sub="Left login portal — orbs, rotating rings, icon box glow effects"
             swatches={GLOW_SWATCHES}
             value={profile.loginGlowColor}
-            onChange={c => {
-              setProfile(f => ({ ...f, loginGlowColor: c }));
-              applyAllColors(profile.accentColor, c, profile.contentBarColor);
-            }}
+            onChange={c => { setProfile(f => ({ ...f, loginGlowColor: c })); applyLoginGlowColor(c); }}
           />
-
-          {/* Zone 3: Content Bar */}
+          {/* Zone 3: Workspace Accent Bar */}
           <ColorZone
-            label="Workspace Accent Bar"
-            sub="Thin coloured stripe at the top of every page after login — visible on every tab"
+            label="Workspace Top Bar"
+            sub="Thin stripe at the top of every page after login — shows on every tab"
             swatches={BAR_SWATCHES}
             value={profile.contentBarColor}
-            onChange={c => {
-              setProfile(f => ({ ...f, contentBarColor: c }));
-              applyAllColors(profile.accentColor, profile.loginGlowColor, c);
-            }}
+            onChange={c => { setProfile(f => ({ ...f, contentBarColor: c })); applyContentBarColor(c); }}
           />
         </div>
 
-        {/* Live preview strip */}
-        <div className="mx-6 mt-4 mb-5 rounded-xl overflow-hidden border border-border">
+        {/* Row 2 */}
+        <div className="px-6 pb-2 pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Zone 4: Sidebar */}
+          <ColorZone
+            label="Sidebar Background"
+            sub="The navigation sidebar — where BranchControl, menu items and Sign Out live"
+            swatches={SIDEBAR_SWATCHES}
+            value={profile.sidebarColor}
+            onChange={c => { setProfile(f => ({ ...f, sidebarColor: c })); applySidebarColor(c); }}
+          />
+          {/* Zone 5: Login Right Panel */}
+          <ColorZone
+            label="Login Right Panel"
+            sub="Background of the form side of the login screen — where OWNER PORTAL and fields appear"
+            swatches={RIGHT_SWATCHES}
+            value={profile.loginRightBg}
+            onChange={c => { setProfile(f => ({ ...f, loginRightBg: c })); applyLoginRightBg(c); }}
+          />
+          {/* Zone 6: Content Background */}
+          <ColorZone
+            label="Page Background"
+            sub="The background of every page — Dashboard, Reports, Stock Search, all tabs"
+            swatches={CONTENT_SWATCHES}
+            value={profile.contentBg}
+            onChange={c => { setProfile(f => ({ ...f, contentBg: c })); applyContentBg(c); }}
+          />
+        </div>
+
+        {/* Live preview mini-bar */}
+        <div className="mx-6 mt-3 mb-5 rounded-xl overflow-hidden border border-border">
           <div className="h-1 w-full" style={{ background: profile.contentBarColor }} />
-          <div className="flex items-center gap-3 px-4 py-3 bg-muted/30">
-            <div className="h-3 w-3 rounded-full" style={{ background: profile.loginGlowColor }} />
-            <span className="text-xs font-bold text-muted-foreground">Login panel glow</span>
-            <div className="h-3 w-3 rounded-full ml-4" style={{ background: profile.accentColor }} />
-            <span className="text-xs font-bold text-muted-foreground">Primary accent</span>
-            <div className="h-1 flex-1 rounded-full" style={{ background: profile.contentBarColor }} />
-            <span className="text-xs font-bold text-muted-foreground">Content bar</span>
+          <div className="flex items-center gap-3 px-4 py-2.5" style={{ background: profile.sidebarColor }}>
+            <div className="h-2.5 w-2.5 rounded-full" style={{ background: profile.loginGlowColor }} />
+            <span className="text-[10px] font-bold text-white/60">Login glow</span>
+            <div className="h-2.5 w-2.5 rounded-full ml-3" style={{ background: profile.accentColor }} />
+            <span className="text-[10px] font-bold text-white/60">Accent</span>
+            <div className="ml-auto flex items-center gap-2">
+              <div className="h-5 w-12 rounded" style={{ background: profile.loginRightBg, border: "1px solid rgba(0,0,0,0.1)" }} />
+              <span className="text-[10px] font-bold text-white/60">Login bg</span>
+              <div className="h-5 w-12 rounded" style={{ background: profile.contentBg, border: "1px solid rgba(0,0,0,0.1)" }} />
+              <span className="text-[10px] font-bold text-white/60">Page bg</span>
+            </div>
           </div>
         </div>
 

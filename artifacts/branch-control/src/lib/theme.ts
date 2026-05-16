@@ -20,12 +20,18 @@ export function hexToHslValues(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
-function isValidHex(hex: string) {
+function isHex(hex: string) {
   return /^#[0-9a-fA-F]{6}$/.test(hex);
 }
 
+/** Lightens or darkens an HSL string by a delta on lightness */
+function shiftL(hsl: string, delta: number): string {
+  const [h, s, l] = hsl.split(/[\s%]+/).map(Number);
+  return `${h} ${s}% ${Math.max(0, Math.min(100, l + delta))}%`;
+}
+
 export function applyAccentColor(hex: string) {
-  if (!isValidHex(hex)) return;
+  if (!isHex(hex)) return;
   const hsl = hexToHslValues(hex);
   document.documentElement.style.setProperty("--primary", hsl);
   document.documentElement.style.setProperty("--sidebar-primary", hsl);
@@ -34,17 +40,47 @@ export function applyAccentColor(hex: string) {
 }
 
 export function applyLoginGlowColor(hex: string) {
-  if (!isValidHex(hex)) return;
+  if (!isHex(hex)) return;
   document.documentElement.style.setProperty("--login-glow", hex);
 }
 
 export function applyContentBarColor(hex: string) {
-  if (!isValidHex(hex)) return;
+  if (!isHex(hex)) return;
   document.documentElement.style.setProperty("--content-bar", hex);
 }
 
-export function applyAllColors(accentColor: string, loginGlowColor: string, contentBarColor: string) {
-  applyAccentColor(accentColor);
-  applyLoginGlowColor(loginGlowColor);
-  applyContentBarColor(contentBarColor);
+export function applySidebarColor(hex: string) {
+  if (!isHex(hex)) return;
+  const hsl = hexToHslValues(hex);
+  document.documentElement.style.setProperty("--sidebar", hsl);
+  document.documentElement.style.setProperty("--sidebar-border", shiftL(hsl, 6));
+  document.documentElement.style.setProperty("--sidebar-accent", shiftL(hsl, 5));
+}
+
+export function applyLoginRightBg(hex: string) {
+  if (!isHex(hex)) return;
+  document.documentElement.style.setProperty("--login-right-bg", hex);
+}
+
+export function applyContentBg(hex: string) {
+  if (!isHex(hex)) return;
+  const hsl = hexToHslValues(hex);
+  document.documentElement.style.setProperty("--background", hsl);
+  document.documentElement.style.setProperty("--content-bg-hex", hex);
+}
+
+export function applyAllColors(colors: {
+  accentColor: string;
+  loginGlowColor: string;
+  contentBarColor: string;
+  sidebarColor: string;
+  loginRightBg: string;
+  contentBg: string;
+}) {
+  applyAccentColor(colors.accentColor);
+  applyLoginGlowColor(colors.loginGlowColor);
+  applyContentBarColor(colors.contentBarColor);
+  applySidebarColor(colors.sidebarColor);
+  applyLoginRightBg(colors.loginRightBg);
+  applyContentBg(colors.contentBg);
 }

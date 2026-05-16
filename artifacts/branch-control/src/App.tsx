@@ -26,13 +26,17 @@ function ThemeLoader() {
   const { data: settings } = useGetSettings();
   useEffect(() => {
     if (settings) {
-      applyAllColors(
-        settings.accentColor,
-        settings.loginGlowColor,
-        settings.contentBarColor,
-      );
+      applyAllColors({
+        accentColor: settings.accentColor,
+        loginGlowColor: settings.loginGlowColor,
+        contentBarColor: settings.contentBarColor,
+        sidebarColor: settings.sidebarColor,
+        loginRightBg: settings.loginRightBg,
+        contentBg: settings.contentBg,
+      });
     }
-  }, [settings?.accentColor, settings?.loginGlowColor, settings?.contentBarColor]);
+  }, [settings?.accentColor, settings?.loginGlowColor, settings?.contentBarColor,
+      settings?.sidebarColor, settings?.loginRightBg, settings?.contentBg]);
   return null;
 }
 

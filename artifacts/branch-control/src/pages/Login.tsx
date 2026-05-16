@@ -274,7 +274,7 @@ export default function Login({ onLogin, logoUrl, companyName }: LoginProps) {
       </div>
 
       {/* ── Right panel ── */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden" style={{ background: "var(--login-right-bg, hsl(var(--background)))" }}>
 
         {/* Subtle accent glow behind the form */}
         <div

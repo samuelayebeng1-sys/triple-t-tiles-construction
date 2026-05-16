@@ -14,6 +14,9 @@ export interface Settings {
   accentColor: string;
   loginGlowColor: string;
   contentBarColor: string;
+  sidebarColor: string;
+  loginRightBg: string;
+  contentBg: string;
   smsCredit: boolean;
   smsLowStock: boolean;
   smsDaily: boolean;

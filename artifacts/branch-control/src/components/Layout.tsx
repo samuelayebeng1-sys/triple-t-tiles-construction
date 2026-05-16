@@ -100,7 +100,7 @@ export default function Layout({ children, onLogout }: LayoutProps) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto flex flex-col">
+      <main className="flex-1 overflow-y-auto flex flex-col" style={{ background: "var(--content-bg-hex, hsl(var(--background)))" }}>
         {/* Accent bar — picks up --content-bar CSS variable set by Interface Customisation */}
         <div
           className="h-1 w-full shrink-0"
