@@ -1,28 +1,163 @@
 import { useState } from "react";
 import { useListReports, useGetReportsSummary } from "@workspace/api-client-react";
 import { GHS, pct, BRANCHES } from "@/lib/format";
-import { Printer, FileText, Table2, MessageSquare, ArrowRight, ExternalLink } from "lucide-react";
+import { FileText, Table2, X, CheckCircle2, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 
 const PERIODS = ["Today", "This Week", "This Month", "This Year"];
 const BRANCH_FILTERS = ["All", ...BRANCHES];
 
+type ExportType = "pdf" | "excel" | null;
+
+function ExportModal({ type, onClose, totals, filtered, period, branchFilter }: {
+  type: ExportType;
+  onClose: () => void;
+  totals: any;
+  filtered: any[];
+  period: string;
+  branchFilter: string;
+}) {
+  const [done, setDone] = useState(false);
+
+  function handleExport() {
+    setDone(true);
+    setTimeout(onClose, 2000);
+  }
+
+  const isPdf = type === "pdf";
+  const label = isPdf ? "PDF Report" : "Excel Spreadsheet";
+  const filename = isPdf
+    ? `BranchControl_Report_${period.replace(/\s+/g, "_")}.pdf`
+    : `BranchControl_Report_${period.replace(/\s+/g, "_")}.xlsx`;
+
+  return (
+    <AnimatePresence>
+      {type && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ type: "spring", bounce: 0.2 }}
+            onClick={e => e.stopPropagation()}
+            className="relative z-10 w-full max-w-md bg-card rounded-3xl border border-border shadow-2xl p-7"
+          >
+            <button onClick={onClose} className="absolute right-5 top-5 rounded-xl bg-muted p-2 hover:bg-muted/70 transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+
+            <AnimatePresence mode="wait">
+              {done ? (
+                <motion.div
+                  key="done"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex flex-col items-center py-4"
+                >
+                  <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                  </div>
+                  <p className="text-lg font-black text-foreground">Export Ready</p>
+                  <p className="text-sm text-muted-foreground mt-1">{filename}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-3">Your file has been prepared for download.</p>
+                </motion.div>
+              ) : (
+                <motion.div key="preview" initial={{ opacity: 1 }}>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${isPdf ? "bg-red-100 dark:bg-red-900/30" : "bg-emerald-100 dark:bg-emerald-900/30"}`}>
+                      {isPdf ? <FileText className="h-5 w-5 text-red-600" /> : <Table2 className="h-5 w-5 text-emerald-600" />}
+                    </div>
+                    <div>
+                      <p className="font-black text-foreground">Export {label}</p>
+                      <p className="text-xs text-muted-foreground">{filename}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2 mb-5">
+                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">Preview</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Period</span>
+                      <span className="font-bold text-foreground">{period}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Branch</span>
+                      <span className="font-bold text-foreground">{branchFilter === "All" ? "All Branches" : branchFilter}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Reports</span>
+                      <span className="font-bold text-foreground">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    <div className="border-t border-border pt-2 mt-2 flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total Sales</span>
+                      <span className="font-black text-foreground">{GHS(totals.totalSales)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Net Profit</span>
+                      <span className="font-black text-emerald-600">{GHS(totals.totalProfit)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Margin</span>
+                      <span className="font-black text-purple-600">{totals.marginPct}%</span>
+                    </div>
+                    {isPdf && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Includes</span>
+                        <span className="font-bold text-foreground">Charts, breakdown</span>
+                      </div>
+                    )}
+                    {!isPdf && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Sheets</span>
+                        <span className="font-bold text-foreground">Summary, By Branch</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleExport}
+                    className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-black text-white transition-all hover:opacity-90 ${isPdf ? "bg-red-600" : "bg-emerald-600"}`}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download {label}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function Reports() {
   const [period, setPeriod] = useState("Today");
   const [branchFilter, setBranchFilter] = useState("All");
-  const [, setLocation] = useLocation();
+  const [exportModal, setExportModal] = useState<ExportType>(null);
   const { data: reports, isLoading: reportsLoading } = useListReports();
   const { data: summary, isLoading: summaryLoading } = useGetReportsSummary();
 
   const totals = summary ?? { totalSales: 0, totalProfit: 0, totalCash: 0, totalMomo: 0, totalCredit: 0, totalItems: 0, marginPct: 0 };
-
   const filtered = (reports ?? []).filter(r => branchFilter === "All" || r.branch === branchFilter);
-
   const grandTotal = filtered.reduce((s, r) => s + r.total, 0);
 
   return (
     <div className="p-6 space-y-6 max-w-5xl" data-testid="page-reports">
+      <ExportModal
+        type={exportModal}
+        onClose={() => setExportModal(null)}
+        totals={totals}
+        filtered={filtered}
+        period={period}
+        branchFilter={branchFilter}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-black text-foreground">Reports</h1>
@@ -52,52 +187,40 @@ export default function Reports() {
 
         <div className="mt-6 pt-5 border-t border-border grid grid-cols-2 gap-3 md:grid-cols-5">
           {[
-            { label: "Cash", value: GHS(totals.totalCash), color: "text-emerald-600" },
-            { label: "MoMo", value: GHS(totals.totalMomo), color: "text-blue-600" },
+            { label: "Cash",   value: GHS(totals.totalCash),   color: "text-emerald-600" },
+            { label: "MoMo",   value: GHS(totals.totalMomo),   color: "text-blue-600" },
             { label: "Credit", value: GHS(totals.totalCredit), color: "text-red-600" },
             { label: "Profit", value: GHS(totals.totalProfit), color: "text-purple-600" },
-            { label: "Margin", value: `${totals.marginPct}%`, color: "text-amber-600" },
+            { label: "Margin", value: `${totals.marginPct}%`,  color: "text-amber-600" },
           ].map(({ label, value, color }) => (
             <div key={label} className="rounded-xl bg-muted/50 p-4">
               <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">{label}</p>
-              <p className={`mt-1.5 text-xl font-black ${color}`} data-testid={`summary-${label.toLowerCase()}`}>{summaryLoading ? "..." : value}</p>
+              <p className={`mt-1.5 text-xl font-black ${color}`} data-testid={`summary-${label.toLowerCase()}`}>
+                {summaryLoading ? "..." : value}
+              </p>
             </div>
           ))}
         </div>
 
+        {/* Export buttons only */}
         <div className="mt-5 flex flex-wrap gap-2">
-          {[
-            { label: "Print Report", icon: Printer },
-            { label: "Export PDF", icon: FileText },
-            { label: "Excel", icon: Table2 },
-            { label: "SMS Summary", icon: MessageSquare },
-          ].map(({ label, icon: Icon }) => (
-            <button
-              key={label}
-              data-testid={`button-${label.toLowerCase().replace(/\s+/g, "-")}`}
-              className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all"
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick links */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "View Credit Book", path: "/credit", color: "bg-amber-50 hover:bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300" },
-          { label: "Stock Levels", path: "/stock", color: "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300" },
-          { label: "Analytics", path: "/analytics", color: "bg-blue-50 hover:bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300" },
-          { label: "Mismatches", path: "/issues", color: "bg-red-50 hover:bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300" },
-        ].map(({ label, path, color }) => (
-          <button key={label} onClick={() => setLocation(path)}
-            className={`rounded-xl p-4 text-left text-sm font-bold transition-all flex items-center justify-between ${color}`}>
-            <span>{label}</span>
-            <ExternalLink className="h-3.5 w-3.5 opacity-60" />
+          <button
+            data-testid="button-export-pdf"
+            onClick={() => setExportModal("pdf")}
+            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all"
+          >
+            <FileText className="h-3.5 w-3.5 text-red-500" />
+            Export PDF
           </button>
-        ))}
+          <button
+            data-testid="button-excel"
+            onClick={() => setExportModal("excel")}
+            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all"
+          >
+            <Table2 className="h-3.5 w-3.5 text-emerald-500" />
+            Excel
+          </button>
+        </div>
       </div>
 
       {/* Branch filter + grand total */}
