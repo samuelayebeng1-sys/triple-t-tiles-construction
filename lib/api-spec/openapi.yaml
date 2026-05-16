@@ -1,22 +1,36 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BranchControl API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: products
+    description: Product catalogue
+  - name: stock
+    description: Stock levels and movements
+  - name: entries
+    description: Daily sales entries
+  - name: reports
+    description: Aggregated reports
+  - name: credits
+    description: Credit book
+  - name: analytics
+    description: Analytics and trends
+  - name: issues
+    description: Stock mismatches
+  - name: settings
+    description: Business settings
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +38,310 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List all products
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /stock:
+    get:
+      operationId: getStock
+      tags: [stock]
+      summary: Get stock levels for all locations
+      responses:
+        "200":
+          description: Stock map
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockLevel"
+
+  /stock/transfers:
+    post:
+      operationId: createTransfer
+      tags: [stock]
+      summary: Transfer stock between locations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferInput"
+      responses:
+        "201":
+          description: Transfer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transfer"
+
+  /stock/deliveries:
+    post:
+      operationId: createDelivery
+      tags: [stock]
+      summary: Receive stock from supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryInput"
+      responses:
+        "201":
+          description: Delivery recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+
+  /entries:
+    get:
+      operationId: listEntries
+      tags: [entries]
+      summary: List all sales entries
+      responses:
+        "200":
+          description: Entries list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entry"
+    post:
+      operationId: createEntry
+      tags: [entries]
+      summary: Submit a branch daily sales entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryInput"
+      responses:
+        "201":
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List all saved reports
+      responses:
+        "200":
+          description: Reports list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+
+  /reports/summary:
+    get:
+      operationId: getReportsSummary
+      tags: [reports]
+      summary: Get aggregated summary for today/period
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSummary"
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [reports]
+      summary: Get dashboard stats and branch performance
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardData"
+
+  /credits:
+    get:
+      operationId: listCredits
+      tags: [credits]
+      summary: List all credit book entries
+      responses:
+        "200":
+          description: Credits list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Credit"
+    post:
+      operationId: createCredit
+      tags: [credits]
+      summary: Add a new credit customer record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditInput"
+      responses:
+        "201":
+          description: Credit created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credit"
+
+  /credits/summary:
+    get:
+      operationId: getCreditsSummary
+      tags: [credits]
+      summary: Get outstanding credit totals
+      responses:
+        "200":
+          description: Credit summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditSummary"
+
+  /credits/{id}/payment:
+    post:
+      operationId: recordPayment
+      tags: [credits]
+      summary: Record a payment on a credit account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "200":
+          description: Updated credit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credit"
+
+  /analytics/weekly:
+    get:
+      operationId: getWeeklyAnalytics
+      tags: [analytics]
+      summary: Weekly sales breakdown by branch
+      responses:
+        "200":
+          description: Weekly analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyAnalytics"
+
+  /analytics/top-products:
+    get:
+      operationId: getTopProducts
+      tags: [analytics]
+      summary: Top products by revenue this month
+      responses:
+        "200":
+          description: Top products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopProduct"
+
+  /issues:
+    get:
+      operationId: listIssues
+      tags: [issues]
+      summary: List stock mismatches
+      responses:
+        "200":
+          description: Issues list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Issue"
+
+  /issues/{id}/resolve:
+    post:
+      operationId: resolveIssue
+      tags: [issues]
+      summary: Mark a stock mismatch as resolved
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Resolved issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get business settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update business settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsInput"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +349,380 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Product:
+      type: object
+      required: [id, code, name, category, price, cost, unit]
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        cost:
+          type: number
+        unit:
+          type: string
+
+    StockLevel:
+      type: object
+      required: [location, productCode, quantity]
+      properties:
+        id:
+          type: integer
+        location:
+          type: string
+        productCode:
+          type: string
+        quantity:
+          type: integer
+
+    TransferInput:
+      type: object
+      required: [fromLocation, toLocation, productCode, quantity]
+      properties:
+        fromLocation:
+          type: string
+        toLocation:
+          type: string
+        productCode:
+          type: string
+        quantity:
+          type: integer
+
+    Transfer:
+      type: object
+      required: [id, fromLocation, toLocation, productCode, quantity, createdAt]
+      properties:
+        id:
+          type: integer
+        fromLocation:
+          type: string
+        toLocation:
+          type: string
+        productCode:
+          type: string
+        quantity:
+          type: integer
+        createdAt:
+          type: string
+
+    DeliveryInput:
+      type: object
+      required: [warehouse, productCode, quantity, supplier]
+      properties:
+        warehouse:
+          type: string
+        productCode:
+          type: string
+        quantity:
+          type: integer
+        supplier:
+          type: string
+
+    Delivery:
+      type: object
+      required: [id, warehouse, productCode, quantity, supplier, createdAt]
+      properties:
+        id:
+          type: integer
+        warehouse:
+          type: string
+        productCode:
+          type: string
+        quantity:
+          type: integer
+        supplier:
+          type: string
+        createdAt:
+          type: string
+
+    EntryLine:
+      type: object
+      required: [productCode, quantitySold, paymentMethod]
+      properties:
+        productCode:
+          type: string
+        quantitySold:
+          type: integer
+        paymentMethod:
+          type: string
+        amountPaid:
+          type: ["number", "null"]
+        customerName:
+          type: ["string", "null"]
+        customerPhone:
+          type: ["string", "null"]
+
+    EntryInput:
+      type: object
+      required: [branch, lines]
+      properties:
+        branch:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/EntryLine"
+
+    Entry:
+      type: object
+      required: [id, branch, totalCash, totalMomo, totalCredit, totalAmount, totalProfit, itemsSold, createdAt, status]
+      properties:
+        id:
+          type: integer
+        branch:
+          type: string
+        totalCash:
+          type: number
+        totalMomo:
+          type: number
+        totalCredit:
+          type: number
+        totalAmount:
+          type: number
+        totalProfit:
+          type: number
+        itemsSold:
+          type: integer
+        createdAt:
+          type: string
+        status:
+          type: string
+
+    Report:
+      type: object
+      required: [id, branch, date, cash, momo, credit, total, profit, itemsSold, status]
+      properties:
+        id:
+          type: integer
+        branch:
+          type: string
+        date:
+          type: string
+        cash:
+          type: number
+        momo:
+          type: number
+        credit:
+          type: number
+        total:
+          type: number
+        profit:
+          type: number
+        itemsSold:
+          type: integer
+        status:
+          type: string
+
+    ReportSummary:
+      type: object
+      required: [totalSales, totalProfit, totalCash, totalMomo, totalCredit, totalItems, marginPct]
+      properties:
+        totalSales:
+          type: number
+        totalProfit:
+          type: number
+        totalCash:
+          type: number
+        totalMomo:
+          type: number
+        totalCredit:
+          type: number
+        totalItems:
+          type: integer
+        marginPct:
+          type: integer
+
+    BranchPerformance:
+      type: object
+      required: [branch, sales, target]
+      properties:
+        branch:
+          type: string
+        sales:
+          type: number
+        target:
+          type: number
+
+    DashboardData:
+      type: object
+      required: [todaySales, todayProfit, outstanding, lowStockCount, weekSales, branchPerformance, recentReports]
+      properties:
+        todaySales:
+          type: number
+        todayProfit:
+          type: number
+        outstanding:
+          type: number
+        lowStockCount:
+          type: integer
+        weekSales:
+          type: array
+          items:
+            type: number
+        branchPerformance:
+          type: array
+          items:
+            $ref: "#/components/schemas/BranchPerformance"
+        recentReports:
+          type: array
+          items:
+            $ref: "#/components/schemas/Report"
+
+    CreditInput:
+      type: object
+      required: [name, phone, total]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        total:
+          type: number
+
+    Credit:
+      type: object
+      required: [id, name, phone, total, paid, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        total:
+          type: number
+        paid:
+          type: number
+        createdAt:
+          type: string
+
+    CreditSummary:
+      type: object
+      required: [totalIssued, totalPaid, outstanding]
+      properties:
+        totalIssued:
+          type: number
+        totalPaid:
+          type: number
+        outstanding:
+          type: number
+
+    PaymentInput:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+
+    WeeklyAnalytics:
+      type: object
+      required: [days, branches]
+      properties:
+        days:
+          type: array
+          items:
+            type: string
+        branches:
+          type: array
+          items:
+            $ref: "#/components/schemas/BranchWeekData"
+
+    BranchWeekData:
+      type: object
+      required: [branch, data]
+      properties:
+        branch:
+          type: string
+        data:
+          type: array
+          items:
+            type: number
+
+    TopProduct:
+      type: object
+      required: [productCode, name, units, revenue]
+      properties:
+        productCode:
+          type: string
+        name:
+          type: string
+        units:
+          type: integer
+        revenue:
+          type: number
+
+    Issue:
+      type: object
+      required: [id, productCode, location, reportedQty, systemQty, diff, valueAtRisk, severity, resolved]
+      properties:
+        id:
+          type: integer
+        productCode:
+          type: string
+        location:
+          type: string
+        reportedQty:
+          type: integer
+        systemQty:
+          type: integer
+        diff:
+          type: integer
+        valueAtRisk:
+          type: number
+        severity:
+          type: string
+        resolved:
+          type: boolean
+
+    Settings:
+      type: object
+      required: [companyName, phone, email, tin, location, smsCredit, smsLowStock, smsDaily, smsSenderId]
+      properties:
+        companyName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        tin:
+          type: string
+        location:
+          type: string
+        smsCredit:
+          type: boolean
+        smsLowStock:
+          type: boolean
+        smsDaily:
+          type: boolean
+        smsSenderId:
+          type: string
+
+    SettingsInput:
+      type: object
+      properties:
+        companyName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        tin:
+          type: string
+        location:
+          type: string
+        smsCredit:
+          type: boolean
+        smsLowStock:
+          type: boolean
+        smsDaily:
+          type: boolean
+        smsSenderId:
+          type: string

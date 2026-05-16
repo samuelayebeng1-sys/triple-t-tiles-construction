@@ -1,0 +1,1341 @@
+mport React, { useMemo, useState, useEffect, useRef } from "react";
+
+const PRODUCTS = [
+{ code: "WC-001", name: "Roca WC", category: "Sanitary", price: 950, cost: 720, unit: "pcs" },
+{ code: "TILE-60", name: "Tiles 60×60", category: "Tiles", price: 155, cost: 118, unit: "m²" },
+{ code: "PVC-110", name: "PVC Pipe 110mm", category: "Plumbing", price: 90, cost: 62, unit: "pcs" },
+{ code: "CEM-50", name: "Cement 50kg", category: "Cement", price: 96, cost: 82, unit: "bags" },
+{ code: "SHW-09", name: "Shower Mixer", category: "Fittings", price: 390, cost: 260, unit: "pcs" },
+{ code: "SINK-01", name: "Stainless Sink", category: "Sanitary", price: 520, cost: 370, unit: "pcs" },
+{ code: "ROD-12", name: "Iron Rod 12mm", category: "Steel", price: 68, cost: 51, unit: "pcs" },
+{ code: "PAINT-W", name: "Paint White 4L", category: "Paints", price: 185, cost: 140, unit: "tins" },
+];
+
+const INIT_STOCK = {
+"Adenta": { "WC-001": 4, "TILE-60": 25, "PVC-110": 2, "CEM-50": 75, "SHW-09": 3, "SINK-01": 6, "ROD-12": 20, "PAINT-W": 12 },
+"Spintex": { "WC-001": 12, "TILE-60": 80, "PVC-110": 25, "CEM-50": 40, "SHW-09": 9, "SINK-01": 14, "ROD-12": 55, "PAINT-W": 30 },
+"Kasoa": { "WC-001": 0, "TILE-60": 12, "PVC-110": 1, "CEM-50": 41, "SHW-09": 2, "SINK-01": 3, "ROD-12": 8, "PAINT-W": 5 },
+"Main Warehouse": { "WC-001": 18, "TILE-60": 210, "PVC-110": 9, "CEM-50": 480, "SHW-09": 12, "SINK-01": 40, "ROD-12": 200, "PAINT-W": 90 },
+"North Warehouse": { "WC-001": 7, "TILE-60": 66, "PVC-110": 4, "CEM-50": 220, "SHW-09": 6, "SINK-01": 18, "ROD-12": 80, "PAINT-W": 44 },
+};
+
+const BRANCHES = ["Adenta", "Spintex", "Kasoa"];
+const WAREHOUSES = ["Main Warehouse", "North Warehouse"];
+const LOCATIONS = [...BRANCHES, ...WAREHOUSES];
+
+const GHS = (v) => GH₵ ${Number(v || 0).toLocaleString("en-GH", { minimumFractionDigits: 0 })};
+const stamp = () => new Date().toLocaleString("en-GH", { dateStyle: "medium", timeStyle: "short" });
+const pct = (a, b) => b ? Math.round((a / b) * 100) : 0;
+
+const SUPPLIERS = ["Dangote", "Diamond Cement", "Buildmart", "PanTile Ltd", "SteelHub Ghana"];
+
+const INIT_CREDITS = [
+{ id: 1, name: "Obeng Construction", phone: "024 441 2090", total: 14500, paid: 8000, date: "12 May 2026" },
+{ id: 2, name: "Mensah Plumbing Co.", phone: "055 883 1021", total: 8200, paid: 0, date: "10 May 2026" },
+{ id: 3, name: "Akosua Estate Ltd", phone: "020 117 4560", total: 5600, paid: 2500, date: "08 May 2026" },
+{ id: 4, name: "Kojo Tiles & More", phone: "027 334 8821", total: 3100, paid: 3100, date: "01 May 2026" },
+];
+
+const SAVED_REPORTS = [
+{ id: 101, branch: "Spintex", date: "14 May 2026", cash: 12400, momo: 4800, credit: 3200, total: 20400, profit: 5180, itemsSold: 37, status: "LOCKED" },
+{ id: 102, branch: "Adenta", date: "14 May 2026", cash: 7200, momo: 2100, credit: 1800, total: 11100, profit: 2640, itemsSold: 22, status: "LOCKED" },
+{ id: 103, branch: "Kasoa", date: "13 May 2026", cash: 4500, momo: 900, credit: 0, total: 5400, profit: 1320, itemsSold: 14, status: "LOCKED" },
+];
+
+function blankEntryRows() {
+return PRODUCTS.map(p => ({ code: p.code, sold: "", pay: "Cash", customer: "", phone: "", paid: "" }));
+}
+
+// ─── Tiny UI Primitives ───────────────────────────────────────────────────────
+
+function Badge({ color = "slate", children }) {
+const map = {
+green: "bg-emerald-100 text-emerald-700",
+red: "bg-red-100 text-red-700",
+amber: "bg-amber-100 text-amber-800",
+blue: "bg-blue-100 text-blue-800",
+slate: "bg-slate-100 text-slate-600",
+purple: "bg-purple-100 text-purple-700",
+};
+return <span className={inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-wide ${map[color]}}>{children};
+}
+
+function Pill({ active, onClick, children }) {
+return (
+<button onClick={onClick}
+className={rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${active ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20" : "bg-white border border-slate-200 text-slate-600 hover:border-slate-400"}}>
+{children}
+
+);
+}
+
+function Card({ children, className = "", pad = "p-6" }) {
+return <div className={rounded-2xl border border-slate-100 bg-white shadow-sm ${pad} ${className}}>{children};
+}
+
+function StatCard({ label, value, sub, color = "slate", icon }) {
+const ic = { slate: "text-slate-400", blue: "text-blue-500", green: "text-emerald-500", red: "text-red-500", amber: "text-amber-500", purple: "text-purple-500" };
+return (
+
+
+{label}
+{icon && <span className={text-xl ${ic[color]}}>{icon}}
+
+<p className={mt-3 text-2xl font-black tracking-tight ${color === "slate" ? "text-slate-900" : ic[color]}}>{value}
+{sub && {sub}}
+
+);
+}
+
+function Input({ label, value, onChange, placeholder = "", type = "text" }) {
+return (
+
+{label && {label}}
+
+
+);
+}
+
+function Select({ label, value, onChange, options }) {
+return (
+
+{label && {label}}
+
+{options.map(o => <option key={o.value || o} value={o.value || o}>{o.label || o})}
+
+
+);
+}
+
+function Btn({ onClick, children, variant = "dark", size = "md", disabled = false }) {
+const v = {
+dark: "bg-slate-900 text-white hover",
+light: "bg-white text-slate-900 border border-slate-200 hover",
+green: "bg-emerald-600 text-white hover",
+red: "bg-red-600 text-white hover",
+blue: "bg-blue-600 text-white hover",
+};
+const s = { sm: "px-4 py-2 text-xs", md: "px-5 py-3 text-sm", lg: "px-7 py-3.5 text-base" };
+return (
+<button onClick={onClick} disabled={disabled}
+className={inline-flex items-center gap-2 rounded-xl font-black transition-all active:scale-95 disabled:opacity-40 ${v[variant]} ${s[size]}}>
+{children}
+
+);
+}
+
+function Divider() { return ; }
+
+function Progress({ value, max, color = "emerald" }) {
+const pct = max ? Math.min(100, Math.round((value / max) * 100)) : 0;
+const c = { emerald: "bg-emerald-500", blue: "bg-blue-500", amber: "bg-amber-500", red: "bg-red-500", slate: "bg-slate-400" };
+return (
+
+<div className={h-full rounded-full transition-all ${c[color]}} style={{ width: ${pct}% }} />
+
+);
+}
+
+// ─── Mini bar chart ──────────────────────────────────────────────────────────
+
+function MiniBar({ data, color = "#1e293b" }) {
+const max = Math.max(...data);
+return (
+
+{data.map((v, i) => (
+<div key={i} className="flex-1 rounded-sm" style={{ height: ${max ? (v / max) * 100 : 0}%, background: color, opacity: 0.6 + 0.4 * (v / max) }} />
+))}
+
+);
+}
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+
+function Toast({ msg, onDone }) {
+useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t); }, []);
+return (
+
+✓ {msg}
+
+);
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+
+const NAV = [
+{ id: "dashboard", label: "Dashboard", icon: "⬛" },
+{ id: "entry", label: "Enter Book", icon: "📖" },
+{ id: "stock", label: "Stock Search", icon: "🔍" },
+{ id: "warehouses", label: "Warehouses", icon: "🏬" },
+{ id: "reports", label: "Reports", icon: "📊" },
+{ id: "analytics", label: "Analytics", icon: "📈" },
+{ id: "credit", label: "Credit Book", icon: "💳" },
+{ id: "issues", label: "Mismatches", icon: "🚩" },
+{ id: "settings", label: "Settings", icon: "⚙️" },
+];
+
+function Sidebar({ page, setPage, company, onLogout }) {
+return (
+
+{/* Brand */}
+
+
+🏢
+
+BranchControl
+by ChalePay
+
+
+
+Business
+{company}
+
+
+  {/* Nav */}
+  <nav className="flex-1 overflow-y-auto px-3 pb-4">
+    <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-300">Menu</p>
+    {NAV.map(({ id, label, icon }) => (
+      <button key={id} onClick={() => setPage(id)}
+        className={`mb-0.5 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all
+          ${page === id ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"}`}>
+        <span className="text-base">{icon}</span>
+        <span>{label}</span>
+        {id === "issues" && <span className="ml-auto rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-black text-red-600">3</span>}
+      </button>
+    ))}
+  </nav>
+
+  {/* Footer */}
+  <div className="border-t border-slate-100 p-4">
+    <button onClick={onLogout}
+      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all">
+      <span>🚪</span> Sign Out
+    </button>
+  </div>
+</aside>
+);
+}
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+
+function Dashboard({ stock, reports, credits, setPage }) {
+const allReports = reports;
+const todaySales = allReports.reduce((s, r) => s + r.total, 0) || 48750;
+const todayProfit = allReports.reduce((s, r) => s + r.profit, 0) || 11420;
+const outstanding = credits.reduce((s, c) => s + c.total - c.paid, 0);
+const lowStock = PRODUCTS.reduce((count, p) => count + LOCATIONS.filter(l => stock[l][p.code] <= 5).length, 0);
+
+const weekData = [29400, 38100, 45800, 52300, 61200, 48750, 54900];
+const days = ["M", "T", "W", "T", "F", "S", "S"];
+const maxW = Math.max(...weekData);
+
+return (
+
+{/* Hero */}
+
+
+
+
+Live · {stamp()}
+
+Today's Overview
+All branches combined
+
+
+{[
+{ label: "Sales", value: GHS(todaySales) },
+{ label: "Profit", value: GHS(todayProfit) },
+{ label: "Outstanding", value: GHS(outstanding) },
+{ label: "Low Stock", value: ${lowStock} items },
+].map(({ label, value }) => (
+
+{label}
+{value}
+
+))}
+
+
+    {/* Week bar */}
+    <div className="mt-6 pt-5 border-t border-white/10">
+      <p className="text-xs font-bold text-slate-400 mb-3">Sales this week · GH₵</p>
+      <div className="flex items-end gap-2 h-16">
+        {weekData.map((v, i) => (
+          <div key={i} className="flex flex-1 flex-col items-center gap-1">
+            <div className={`w-full rounded-t-md transition-all ${i === 5 ? "bg-blue-400" : "bg-white/20"}`}
+              style={{ height: `${(v / maxW) * 100}%` }} />
+            <span className="text-[10px] font-bold text-slate-500">{days[i]}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  {/* Quick actions */}
+  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+    {[
+      { id: "entry", label: "Enter Branch Book", icon: "📖", color: "bg-blue-50 hover:bg-blue-100 text-blue-800" },
+      { id: "stock", label: "Find Stock", icon: "🔍", color: "bg-emerald-50 hover:bg-emerald-100 text-emerald-800" },
+      { id: "reports", label: "View Reports", icon: "📊", color: "bg-amber-50 hover:bg-amber-100 text-amber-800" },
+      { id: "credit", label: "Credit Book", icon: "💳", color: "bg-purple-50 hover:bg-purple-100 text-purple-800" },
+    ].map(({ id, label, icon, color }) => (
+      <button key={id} onClick={() => setPage(id)}
+        className={`flex items-center gap-3 rounded-2xl p-5 text-left font-bold transition-all ${color}`}>
+        <span className="text-2xl">{icon}</span>
+        <span className="text-sm">{label}</span>
+      </button>
+    ))}
+  </div>
+
+  {/* Metrics + branch performance */}
+  <div className="grid gap-4 md:grid-cols-4">
+    <StatCard label="Total Transactions" value="143" sub="Today" icon="🔄" color="blue" />
+    <StatCard label="Best Branch" value="Spintex" sub={GHS(20400)} icon="🏆" color="green" />
+    <StatCard label="Avg Basket" value={GHS(341)} sub="Per sale today" icon="🛒" color="purple" />
+    <StatCard label="SMS Sent" value="24" sub="Customer alerts" icon="📱" />
+  </div>
+
+  {/* Branch comparison */}
+  <div className="grid gap-4 md:grid-cols-3">
+    {[
+      { branch: "Spintex", sales: 20400, target: 25000, color: "blue" },
+      { branch: "Adenta", sales: 11100, target: 15000, color: "emerald" },
+      { branch: "Kasoa", sales: 5400, target: 10000, color: "amber" },
+    ].map(({ branch, sales, target, color }) => (
+      <Card key={branch} pad="p-5">
+        <div className="flex items-center justify-between">
+          <p className="font-black text-slate-900">{branch}</p>
+          <Badge color={sales >= target ? "green" : "amber"}>{pct(sales, target)}% of target</Badge>
+        </div>
+        <p className="mt-3 text-2xl font-black text-slate-900">{GHS(sales)}</p>
+        <p className="text-xs text-slate-400 mt-0.5">Target: {GHS(target)}</p>
+        <div className="mt-3">
+          <Progress value={sales} max={target} color={color} />
+        </div>
+      </Card>
+    ))}
+  </div>
+
+  {/* Recent reports */}
+  <Card>
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="font-black text-slate-900">Recent Reports</h3>
+      <Btn onClick={() => setPage("reports")} variant="light" size="sm">View all →</Btn>
+    </div>
+    <div className="space-y-2">
+      {SAVED_REPORTS.map(r => (
+        <div key={r.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-slate-200 flex items-center justify-center text-sm">📊</div>
+            <div>
+              <p className="text-sm font-bold text-slate-900">{r.branch}</p>
+              <p className="text-xs text-slate-400">{r.date}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-black text-slate-900">{GHS(r.total)}</p>
+            <Badge color="green">Locked</Badge>
+          </div>
+        </div>
+      ))}
+    </div>
+  </Card>
+</div>
+);
+}
+
+// ─── Entry Book ──────────────────────────────────────────────────────────────
+
+function Entry({ stock, setStock, selectedBranch, setSelectedBranch, onFinish }) {
+const [rows, setRows] = useState(blankEntryRows);
+const [confirmed, setConfirmed] = useState(false);
+
+function update(i, k, v) {
+setRows(rs => rs.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
+}
+
+const totals = useMemo(() => {
+let cash = 0, momo = 0, credit = 0, profit = 0, items = 0;
+rows.forEach(row => {
+const qty = Number(row.sold || 0);
+if (!qty) return;
+const p = PRODUCTS.find(p => p.code === row.code);
+const amount = qty * p.price;
+items += qty;
+profit += qty * (p.price - p.cost);
+if (row.pay === "Cash") cash += amount;
+if (row.pay === "MoMo") momo += amount;
+if (row.pay === "Credit") credit += amount;
+if (row.pay === "Split") { const pd = Number(row.paid || 0); cash += pd; credit += Math.max(0, amount - pd); }
+});
+return { cash, momo, credit, total: cash + momo + credit, profit, items };
+}, [rows]);
+
+function finish() {
+if (!confirmed) { setConfirmed(true); return; }
+onFinish(rows, selectedBranch, totals);
+setRows(blankEntryRows());
+setConfirmed(false);
+}
+
+return (
+
+{/* Branch selector */}
+
+
+Branch
+{BRANCHES.map(b => (
+<Pill key={b} active={b === selectedBranch} onClick={() => setSelectedBranch(b)}>{b}
+))}
+
+
+Open
+
+
+
+  {/* Header info */}
+  <Card pad="p-5">
+    <div className="flex items-start justify-between">
+      <div>
+        <h2 className="text-2xl font-black text-slate-900">{selectedBranch} Sales Entry</h2>
+        <p className="text-sm text-slate-400 mt-0.5">Date: {new Date().toLocaleDateString("en-GH", { dateStyle: "long" })}</p>
+      </div>
+      <Badge color="green">● Recording</Badge>
+    </div>
+  </Card>
+
+  {/* Table */}
+  <Card pad="p-0">
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-slate-100 bg-slate-50">
+            <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-slate-400">Code</th>
+            <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-slate-400">Product</th>
+            <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-slate-400">Price</th>
+            <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-slate-400">Stock</th>
+            <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-slate-400">Qty Sold</th>
+            <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-slate-400">Amount</th>
+            <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-slate-400">Payment</th>
+            <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-slate-400">Customer</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => {
+            const p = PRODUCTS.find(x => x.code === row.code);
+            const qty = Number(row.sold || 0);
+            const amount = qty * p.price;
+            const stockQty = stock[selectedBranch][row.code] || 0;
+            const hasQty = qty > 0;
+            const needsCust = row.pay === "Credit" || row.pay === "Split";
+            return (
+              <tr key={row.code} className={`border-b border-slate-50 transition-colors ${hasQty ? "bg-blue-50/40" : "hover:bg-slate-50"}`}>
+                <td className="px-4 py-3">
+                  <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">{row.code}</span>
+                </td>
+                <td className="px-4 py-3">
+                  <p className="font-bold text-slate-900">{p.name}</p>
+                  <p className="text-xs text-slate-400">{p.category}</p>
+                </td>
+                <td className="px-4 py-3 font-bold text-slate-700">{GHS(p.price)}</td>
+                <td className="px-4 py-3">
+                  <span className={`font-black ${stockQty <= 5 ? "text-red-600" : "text-emerald-600"}`}>{stockQty}</span>
+                  <span className="text-xs text-slate-400 ml-1">{p.unit}</span>
+                </td>
+                <td className="px-4 py-3">
+                  <input value={row.sold} onChange={e => update(i, "sold", e.target.value)} type="number" min="0"
+                    className="w-20 rounded-lg border border-slate-200 bg-white px-3 py-2 text-center font-black outline-none focus:border-blue-400 text-sm" />
+                </td>
+                <td className="px-4 py-3">
+                  {hasQty ? <span className="font-black text-slate-900">{GHS(amount)}</span> : <span className="text-slate-300">—</span>}
+                </td>
+                <td className="px-4 py-3">
+                  <select value={row.pay} onChange={e => update(i, "pay", e.target.value)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold outline-none focus:border-blue-400">
+                    {["Cash", "MoMo", "Credit", "Split"].map(x => <option key={x}>{x}</option>)}
+                  </select>
+                  {row.pay === "Split" && (
+                    <input value={row.paid} onChange={e => update(i, "paid", e.target.value)} placeholder="Amt paid"
+                      className="mt-1.5 w-24 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold outline-none focus:border-blue-400" />
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {needsCust ? (
+                    <div className="space-y-1">
+                      <input value={row.customer} onChange={e => update(i, "customer", e.target.value)} placeholder="Full name"
+                        className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-blue-400" />
+                      <input value={row.phone} onChange={e => update(i, "phone", e.target.value)} placeholder="Phone"
+                        className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold outline-none focus:border-blue-400" />
+                    </div>
+                  ) : <span className="text-slate-300 text-xs">Walk-in</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </Card>
+
+  {/* Totals + Submit */}
+  <div className="grid gap-4 md:grid-cols-[1fr_340px]">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <StatCard label="Cash" value={GHS(totals.cash)} color="green" icon="💵" />
+      <StatCard label="MoMo" value={GHS(totals.momo)} color="blue" icon="📱" />
+      <StatCard label="Credit" value={GHS(totals.credit)} color="red" icon="📋" />
+      <StatCard label="Profit" value={GHS(totals.profit)} color="purple" icon="📈" />
+    </div>
+    <Card pad="p-5">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Total Sale</p>
+        <p className="text-3xl font-black text-slate-900">{GHS(totals.total)}</p>
+      </div>
+      <p className="text-xs text-slate-400 mb-4">{totals.items} items sold · {selectedBranch}</p>
+      {confirmed && (
+        <div className="mb-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs font-bold text-amber-800">
+          ⚠️ Confirm to lock this entry permanently.
+        </div>
+      )}
+      <Btn onClick={finish} variant={confirmed ? "green" : "dark"} size="lg">
+        {confirmed ? "✓ Confirm & Lock" : "Finish Entry"}
+      </Btn>
+    </Card>
+  </div>
+</div>
+);
+}
+
+// ─── Stock Search ─────────────────────────────────────────────────────────────
+
+function StockSearch({ stock }) {
+const [q, setQ] = useState("");
+const [view, setView] = useState("grid"); // grid | list
+
+const visible = PRODUCTS.filter(p =>
+${p.code} ${p.name} ${p.category}.toLowerCase().includes(q.toLowerCase())
+);
+
+function totalStock(code) {
+return LOCATIONS.reduce((s, l) => s + (stock[l][code] || 0), 0);
+}
+function lowLocations(code) {
+return LOCATIONS.filter(l => (stock[l][code] || 0) <= 5).length;
+}
+
+return (
+
+
+
+🔍
+<input value={q} onChange={e => setQ(e.target.value)} placeholder="Search by code, name, or category..."
+className="flex-1 bg-transparent text-base font-semibold text-slate-900 outline-none placeholder" />
+{q && <button onClick={() => setQ("")} className="text-slate-400 hover">✕}
+
+
+  <div className="flex items-center justify-between">
+    <p className="text-sm text-slate-400 font-bold">{visible.length} products</p>
+    <div className="flex gap-2">
+      <Pill active={view === "grid"} onClick={() => setView("grid")}>Grid</Pill>
+      <Pill active={view === "list"} onClick={() => setView("list")}>List</Pill>
+    </div>
+  </div>
+
+  {visible.map(p => (
+    <Card key={p.code}>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-black text-white">{p.code}</span>
+            <Badge color={lowLocations(p.code) >= 2 ? "red" : lowLocations(p.code) === 1 ? "amber" : "green"}>
+              {lowLocations(p.code) === 0 ? "All Good" : `${lowLocations(p.code)} Low`}
+            </Badge>
+          </div>
+          <h3 className="mt-2 text-xl font-black text-slate-900">{p.name}</h3>
+          <p className="text-sm text-slate-400">{p.category} · {GHS(p.price)} / {p.unit}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-black text-slate-900">{totalStock(p.code)}</p>
+          <p className="text-xs text-slate-400">Total units</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+        {LOCATIONS.map(l => {
+          const qty = stock[l][p.code] || 0;
+          const low = qty <= 5;
+          return (
+            <div key={l} className={`rounded-xl p-3 ${low ? "bg-red-50 border border-red-100" : "bg-slate-50"}`}>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate">{l}</p>
+              <p className={`mt-1 text-xl font-black ${low ? "text-red-600" : "text-slate-900"}`}>{qty}</p>
+              {low && <p className="text-[10px] text-red-500 font-bold mt-0.5">Low stock</p>}
+            </div>
+          );
+        })}
+      </div>
+      <Divider />
+      <div className="flex gap-4 text-sm text-slate-500">
+        <span>Cost: <strong className="text-slate-900">{GHS(p.cost)}</strong></span>
+        <span>Margin: <strong className="text-emerald-600">{Math.round(((p.price - p.cost) / p.price) * 100)}%</strong></span>
+        <span>Margin/unit: <strong className="text-slate-900">{GHS(p.price - p.cost)}</strong></span>
+      </div>
+    </Card>
+  ))}
+</div>
+);
+}
+
+// ─── Warehouses ───────────────────────────────────────────────────────────────
+
+function Warehouses({ stock, setStock, addLog }) {
+const [receiveForm, setReceiveForm] = useState({ warehouse: "Main Warehouse", code: "CEM-50", qty: "", supplier: "Dangote" });
+const [transferForm, setTransferForm] = useState({ from: "Main Warehouse", to: "Spintex", code: "CEM-50", qty: "" });
+const [toast, setToast] = useState(null);
+
+function receiveStock() {
+const qty = Number(receiveForm.qty || 0);
+if (!qty) return;
+setStock(s => ({ ...s, [receiveForm.warehouse]: { ...s[receiveForm.warehouse], [receiveForm.code]: (s[receiveForm.warehouse][receiveForm.code] || 0) + qty } }));
+setToast(✓ ${qty}× ${receiveForm.code} added to ${receiveForm.warehouse});
+addLog(Received ${qty} ${receiveForm.code} into ${receiveForm.warehouse} from ${receiveForm.supplier});
+setReceiveForm(f => ({ ...f, qty: "" }));
+}
+
+function transferStock() {
+const qty = Number(transferForm.qty || 0);
+if (!qty) return;
+setStock(s => {
+const avail = s[transferForm.from][transferForm.code] || 0;
+const moved = Math.min(avail, qty);
+return {
+...s,
+[transferForm.from]: { ...s[transferForm.from], [transferForm.code]: avail - moved },
+[transferForm.to]: { ...s[transferForm.to], [transferForm.code]: (s[transferForm.to][transferForm.code] || 0) + moved },
+};
+});
+setToast(✓ ${qty}× ${transferForm.code}: ${transferForm.from} → ${transferForm.to});
+addLog(Transferred ${qty} ${transferForm.code} from ${transferForm.from} to ${transferForm.to});
+setTransferForm(f => ({ ...f, qty: "" }));
+}
+
+return (
+
+{toast && <Toast msg={toast} onDone={() => setToast(null)} />}
+
+  {/* Warehouse cards */}
+  <div className="grid gap-4 md:grid-cols-2">
+    {WAREHOUSES.map(w => {
+      const totalVal = PRODUCTS.reduce((s, p) => s + p.cost * (stock[w][p.code] || 0), 0);
+      const totalUnits = PRODUCTS.reduce((s, p) => s + (stock[w][p.code] || 0), 0);
+      const lowCount = PRODUCTS.filter(p => (stock[w][p.code] || 0) <= 5).length;
+      return (
+        <Card key={w}>
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-black text-slate-900">{w}</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Primary storage facility</p>
+            </div>
+            <Badge color={lowCount > 0 ? "amber" : "green"}>{lowCount > 0 ? `${lowCount} low` : "Stocked"}</Badge>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard label="Stock Value" value={GHS(totalVal)} />
+            <StatCard label="Total Units" value={totalUnits.toLocaleString()} />
+          </div>
+          <Divider />
+          <div className="space-y-2">
+            {PRODUCTS.map(p => {
+              const qty = stock[w][p.code] || 0;
+              return (
+                <div key={p.code} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 font-semibold">{p.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`font-black ${qty <= 5 ? "text-red-600" : "text-slate-900"}`}>{qty}</span>
+                    <span className="text-xs text-slate-400">{p.unit}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      );
+    })}
+  </div>
+
+  {/* Receive stock */}
+  <Card>
+    <h2 className="text-xl font-black text-slate-900 mb-1">Receive Stock from Supplier</h2>
+    <p className="text-sm text-slate-400 mb-5">Add newly delivered goods to a warehouse</p>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Select label="Warehouse" value={receiveForm.warehouse} onChange={e => setReceiveForm({ ...receiveForm, warehouse: e.target.value })} options={WAREHOUSES} />
+      <Select label="Product" value={receiveForm.code} onChange={e => setReceiveForm({ ...receiveForm, code: e.target.value })} options={PRODUCTS.map(p => ({ value: p.code, label: `${p.code} — ${p.name}` }))} />
+      <Input label="Quantity" value={receiveForm.qty} onChange={e => setReceiveForm({ ...receiveForm, qty: e.target.value })} placeholder="e.g. 50" type="number" />
+      <Select label="Supplier" value={receiveForm.supplier} onChange={e => setReceiveForm({ ...receiveForm, supplier: e.target.value })} options={SUPPLIERS} />
+    </div>
+    <div className="mt-5"><Btn onClick={receiveStock} variant="dark">Save Delivery</Btn></div>
+  </Card>
+
+  {/* Transfer */}
+  <Card>
+    <h2 className="text-xl font-black text-slate-900 mb-1">Transfer Stock</h2>
+    <p className="text-sm text-slate-400 mb-5">Move items between any two locations</p>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Select label="From" value={transferForm.from} onChange={e => setTransferForm({ ...transferForm, from: e.target.value })} options={LOCATIONS} />
+      <Select label="To" value={transferForm.to} onChange={e => setTransferForm({ ...transferForm, to: e.target.value })} options={LOCATIONS} />
+      <Select label="Product" value={transferForm.code} onChange={e => setTransferForm({ ...transferForm, code: e.target.value })} options={PRODUCTS.map(p => ({ value: p.code, label: `${p.code} — ${p.name}` }))} />
+      <Input label="Quantity" value={transferForm.qty} onChange={e => setTransferForm({ ...transferForm, qty: e.target.value })} placeholder="e.g. 20" type="number" />
+    </div>
+    <div className="mt-5 flex items-center gap-3">
+      <Btn onClick={transferStock} variant="blue">Transfer →</Btn>
+      {transferForm.from === transferForm.to && <span className="text-xs text-red-500 font-bold">From and To must be different</span>}
+    </div>
+  </Card>
+</div>
+);
+}
+
+// ─── Reports ──────────────────────────────────────────────────────────────────
+
+function Reports({ reports }) {
+const [period, setPeriod] = useState("Today");
+const allReports = [...reports, ...SAVED_REPORTS];
+
+const totals = useMemo(() => {
+return allReports.reduce((s, r) => ({
+total: s.total + r.total, cash: s.cash + r.cash,
+momo: s.momo + r.momo, credit: s.credit + r.credit,
+profit: s.profit + r.profit, items: s.items + r.itemsSold,
+}), { total: 0, cash: 0, momo: 0, credit: 0, profit: 0, items: 0 });
+}, [allReports]);
+
+return (
+
+
+{["Today", "This Week", "This Month", "This Year", "Custom"].map(x => (
+<Pill key={x} active={x === period} onClick={() => setPeriod(x)}>{x}
+))}
+
+  {/* Summary */}
+  <Card pad="p-7" className="border-l-4 border-l-slate-900">
+    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{period} Summary</p>
+    <h2 className="mt-3 text-5xl font-black text-slate-900">{GHS(totals.total)}</h2>
+    <p className="text-slate-400 mt-1">{totals.items} items sold across all branches</p>
+    <Divider />
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <StatCard label="Cash" value={GHS(totals.cash)} color="green" />
+      <StatCard label="MoMo" value={GHS(totals.momo)} color="blue" />
+      <StatCard label="Credit" value={GHS(totals.credit)} color="red" />
+      <StatCard label="Profit" value={GHS(totals.profit)} color="purple" />
+      <StatCard label="Margin" value={`${totals.total ? pct(totals.profit, totals.total) : 0}%`} color="amber" />
+    </div>
+    <div className="mt-5 flex flex-wrap gap-2">
+      <Btn variant="dark" size="sm">🖨 Print Report</Btn>
+      <Btn variant="blue" size="sm">📄 Export PDF</Btn>
+      <Btn variant="light" size="sm">📊 Excel</Btn>
+      <Btn variant="green" size="sm">📱 SMS Summary</Btn>
+    </div>
+  </Card>
+
+  {/* Individual reports */}
+  <h3 className="font-black text-slate-900">All Reports</h3>
+  <div className="space-y-3">
+    {allReports.map(r => (
+      <Card key={r.id} pad="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-black text-slate-900">{r.branch}</p>
+              <Badge color="slate">{r.date}</Badge>
+              <Badge color="green">🔒 {r.status}</Badge>
+            </div>
+            <p className="text-2xl font-black text-slate-900 mt-2">{GHS(r.total)}</p>
+          </div>
+          <div className="text-right text-sm text-slate-500 space-y-0.5">
+            <p>Cash: <strong className="text-slate-900">{GHS(r.cash)}</strong></p>
+            <p>MoMo: <strong className="text-slate-900">{GHS(r.momo)}</strong></p>
+            <p>Credit: <strong className="text-red-600">{GHS(r.credit)}</strong></p>
+            <p>Profit: <strong className="text-emerald-600">{GHS(r.profit)}</strong></p>
+          </div>
+        </div>
+        <div className="mt-3">
+          <Progress value={r.profit} max={r.total} color="emerald" />
+          <p className="text-xs text-slate-400 mt-1">{pct(r.profit, r.total)}% profit margin · {r.itemsSold} items</p>
+        </div>
+      </Card>
+    ))}
+  </div>
+</div>
+);
+}
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+function Analytics() {
+const weeks = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const salesData = { Spintex: [8200, 11300, 9800, 14200, 12600, 20400, 17800], Adenta: [5100, 6400, 7200, 9300, 8700, 11100, 9500], Kasoa: [1800, 2400, 2100, 3800, 3200, 5400, 4600] };
+const maxSale = 20400;
+
+const topProducts = [
+{ code: "CEM-50", name: "Cement 50kg", units: 412, revenue: 39552 },
+{ code: "TILE-60", name: "Tiles 60×60", units: 230, revenue: 35650 },
+{ code: "WC-001", name: "Roca WC", units: 28, revenue: 26600 },
+{ code: "SHW-09", name: "Shower Mixer", units: 54, revenue: 21060 },
+{ code: "SINK-01", name: "Stainless Sink", units: 38, revenue: 19760 },
+];
+
+const colors = { Spintex: "bg-blue-500", Adenta: "bg-emerald-500", Kasoa: "bg-amber-500" };
+
+return (
+
+{/* KPIs */}
+
+
+
+
+<StatCard label="Credit Risk" value="Medium" sub={GHS(17900) + " outstanding"} color="amber" icon="⚠️" />
+
+  {/* Weekly chart */}
+  <Card>
+    <h3 className="font-black text-slate-900 mb-1">Weekly Sales by Branch</h3>
+    <p className="text-sm text-slate-400 mb-5">GH₵ sales per day, all 3 showrooms</p>
+    <div className="flex items-end gap-3 h-44">
+      {weeks.map((day, di) => (
+        <div key={day} className="flex-1 flex flex-col items-center gap-1">
+          {Object.entries(salesData).map(([branch, data]) => {
+            const h = (data[di] / maxSale) * 100;
+            return <div key={branch} className={`w-full rounded-sm ${colors[branch]}`} style={{ height: `${h * 0.4 + 4}px`, opacity: 0.85 }} />;
+          })}
+          <span className="text-[10px] font-bold text-slate-400">{day}</span>
+        </div>
+      ))}
+    </div>
+    <div className="mt-4 flex gap-4">
+      {Object.entries(colors).map(([branch, bg]) => (
+        <div key={branch} className="flex items-center gap-1.5">
+          <div className={`h-2.5 w-2.5 rounded-full ${bg}`} />
+          <span className="text-xs font-bold text-slate-600">{branch}</span>
+        </div>
+      ))}
+    </div>
+  </Card>
+
+  {/* Top products */}
+  <Card>
+    <h3 className="font-black text-slate-900 mb-1">Top Products by Revenue</h3>
+    <p className="text-sm text-slate-400 mb-5">This month's best performers</p>
+    <div className="space-y-3">
+      {topProducts.map((p, i) => {
+        const maxR = topProducts[0].revenue;
+        return (
+          <div key={p.code}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-slate-400 w-4">{i + 1}</span>
+                <span className="font-bold text-slate-900 text-sm">{p.name}</span>
+                <span className="text-xs text-slate-400">{p.units} units</span>
+              </div>
+              <span className="font-black text-slate-900 text-sm">{GHS(p.revenue)}</span>
+            </div>
+            <Progress value={p.revenue} max={maxR} color={["blue", "emerald", "amber", "purple", "slate"][i]} />
+          </div>
+        );
+      })}
+    </div>
+  </Card>
+
+  {/* Sales heatmap */}
+  <Card>
+    <h3 className="font-black text-slate-900 mb-1">Branch × Day Heatmap</h3>
+    <p className="text-sm text-slate-400 mb-5">Colour intensity = sales strength</p>
+    <div className="grid grid-cols-[80px_repeat(7,1fr)] gap-1.5 text-center text-xs font-bold">
+      <div />
+      {weeks.map(d => <div key={d} className="py-1 text-slate-500">{d}</div>)}
+      {Object.entries(salesData).map(([branch, data]) => (
+        <React.Fragment key={branch}>
+          <div className="py-3 text-left text-slate-700 font-black text-xs">{branch}</div>
+          {data.map((v, i) => {
+            const intensity = v / maxSale;
+            const bg = intensity > 0.8 ? "bg-blue-600" : intensity > 0.55 ? "bg-blue-400" : intensity > 0.3 ? "bg-blue-200" : "bg-blue-50";
+            return <div key={i} className={`rounded-lg h-10 ${bg}`} />;
+          })}
+        </React.Fragment>
+      ))}
+    </div>
+    <div className="mt-4 flex items-center gap-3 text-xs font-bold text-slate-500">
+      <span>Low</span>
+      {["bg-blue-50", "bg-blue-200", "bg-blue-400", "bg-blue-600"].map((c, i) => (
+        <div key={i} className={`h-3 w-6 rounded ${c}`} />
+      ))}
+      <span>High</span>
+    </div>
+  </Card>
+</div>
+);
+}
+
+// ─── Credit Book ──────────────────────────────────────────────────────────────
+
+function CreditBook({ credits, setCredits, addLog }) {
+const [payment, setPayment] = useState({ id: null, amount: "" });
+const [filter, setFilter] = useState("All");
+const [toast, setToast] = useState(null);
+
+const total = credits.reduce((s, c) => s + c.total, 0);
+const totalPaid = credits.reduce((s, c) => s + c.paid, 0);
+const outstanding = total - totalPaid;
+
+const filtered = credits.filter(c => {
+if (filter === "Outstanding") return c.paid < c.total;
+if (filter === "Settled") return c.paid >= c.total;
+return true;
+});
+
+function recordPayment() {
+const amt = Number(payment.amount || 0);
+if (!amt || !payment.id) return;
+setCredits(cs => cs.map(c => c.id === payment.id ? { ...c, paid: Math.min(c.total, c.paid + amt) } : c));
+const cust = credits.find(c => c.id === payment.id);
+setToast(Payment of ${GHS(amt)} recorded for ${cust?.name});
+addLog(Credit payment: ${cust?.name} paid ${GHS(amt)});
+setPayment({ id: null, amount: "" });
+}
+
+return (
+
+{toast && <Toast msg={toast} onDone={() => setToast(null)} />}
+
+  {/* Summary */}
+  <div className="grid gap-3 md:grid-cols-3">
+    <StatCard label="Total Credit Issued" value={GHS(total)} color="slate" />
+    <StatCard label="Amount Collected" value={GHS(totalPaid)} color="green" />
+    <StatCard label="Outstanding Balance" value={GHS(outstanding)} color="red" icon="⚠️" />
+  </div>
+
+  {/* Filter + list */}
+  <div className="flex gap-2 flex-wrap">
+    {["All", "Outstanding", "Settled"].map(f => <Pill key={f} active={f === filter} onClick={() => setFilter(f)}>{f}</Pill>)}
+  </div>
+
+  <div className="grid gap-3 md:grid-cols-2">
+    {filtered.map(c => {
+      const balance = c.total - c.paid;
+      const settled = balance === 0;
+      return (
+        <Card key={c.id}>
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-black text-slate-500">
+                  {c.name[0]}
+                </div>
+                <div>
+                  <p className="font-black text-slate-900 text-sm">{c.name}</p>
+                  <p className="text-xs text-slate-400">{c.phone}</p>
+                </div>
+              </div>
+            </div>
+            <Badge color={settled ? "green" : "red"}>{settled ? "Settled" : "Owing"}</Badge>
+          </div>
+          <Divider />
+          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+            <div><p className="text-xs text-slate-400 font-bold">Total</p><p className="font-black text-slate-900">{GHS(c.total)}</p></div>
+            <div><p className="text-xs text-slate-400 font-bold">Paid</p><p className="font-black text-emerald-600">{GHS(c.paid)}</p></div>
+            <div><p className="text-xs text-slate-400 font-bold">Balance</p><p className={`font-black ${settled ? "text-emerald-600" : "text-red-600"}`}>{GHS(balance)}</p></div>
+          </div>
+          <Progress value={c.paid} max={c.total} color={settled ? "emerald" : "amber"} />
+          <p className="text-xs text-slate-400 mt-1">Since {c.date}</p>
+          {!settled && (
+            <div className="mt-3 flex gap-2">
+              <input value={payment.id === c.id ? payment.amount : ""} onChange={e => setPayment({ id: c.id, amount: e.target.value })}
+                placeholder="Enter amount..." type="number"
+                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold outline-none focus:border-emerald-400 focus:bg-white"
+                onFocus={() => setPayment(p => ({ ...p, id: c.id }))} />
+              <Btn onClick={recordPayment} variant="green" size="sm" disabled={payment.id !== c.id || !payment.amount}>Record</Btn>
+            </div>
+          )}
+        </Card>
+      );
+    })}
+  </div>
+</div>
+);
+}
+
+// ─── Issues / Mismatches ──────────────────────────────────────────────────────
+
+function Issues({ stock }) {
+const [resolved, setResolved] = useState([]);
+const mismatches = [
+{ id: 1, code: "WC-001", branch: "Spintex", reported: 10, system: 12, diff: -2, value: 1900, severity: "high" },
+{ id: 2, code: "TILE-60", branch: "Spintex", reported: 75, system: 80, diff: -5, value: 775, severity: "medium" },
+{ id: 3, code: "PVC-110", branch: "Main Warehouse", reported: 6, system: 9, diff: -3, value: 270, severity: "low" },
+{ id: 4, code: "CEM-50", branch: "Adenta", reported: 72, system: 75, diff: -3, value: 288, severity: "low" },
+];
+
+const active = mismatches.filter(m => !resolved.includes(m.id));
+const totalRisk = active.reduce((s, m) => s + m.value, 0);
+
+return (
+
+
+
+
+
+
+  <Card>
+    <h3 className="font-black text-slate-900 mb-1">Stock Mismatches</h3>
+    <p className="text-sm text-slate-400 mb-5">Discrepancies between physical counts and system records</p>
+    <div className="space-y-3">
+      {active.map(m => {
+        const sev = { high: { bg: "bg-red-50", border: "border-red-200", text: "text-red-700", badge: "red" }, medium: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", badge: "amber" }, low: { bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-700", badge: "slate" } }[m.severity];
+        return (
+          <div key={m.id} className={`rounded-xl border p-4 ${sev.bg} ${sev.border}`}>
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`font-black text-sm ${sev.text}`}>{m.code} · {m.branch}</span>
+                  <Badge color={sev.badge}>{m.severity.toUpperCase()}</Badge>
+                </div>
+                <div className="mt-2 flex gap-4 text-xs font-bold text-slate-600">
+                  <span>System: <strong>{m.system}</strong></span>
+                  <span>Physical: <strong>{m.reported}</strong></span>
+                  <span className="text-red-600">Diff: <strong>{m.diff}</strong></span>
+                  <span>At risk: <strong>{GHS(m.value)}</strong></span>
+                </div>
+              </div>
+              <Btn onClick={() => setResolved(r => [...r, m.id])} variant="light" size="sm">Mark Resolved</Btn>
+            </div>
+          </div>
+        );
+      })}
+      {active.length === 0 && (
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-6 text-center">
+          <p className="text-2xl mb-2">✓</p>
+          <p className="font-black text-emerald-800">All mismatches resolved!</p>
+        </div>
+      )}
+    </div>
+  </Card>
+</div>
+);
+}
+
+// ─── Settings ────────────────────────────────────────────────────────────────
+
+function Settings({ company, setCompany }) {
+const [profile, setProfile] = useState({ company, phone: "030 291 4400", email: "owner@asedabm.com", tin: "GH-TIN-20291", location: "Accra, Ghana" });
+const [toast, setToast] = useState(null);
+const [sms, setSms] = useState({ credit: true, lowStock: true, daily: false, sender: "ASEDASTOCK" });
+
+function save() { setCompany(profile.company); setToast("Settings saved successfully"); }
+
+const sections = [
+"Business Profile", "Owner Account", "Branches & Warehouses",
+"Product Catalogue", "Stock Alert Rules", "Credit Settings",
+"Report Settings", "SMS & Notifications", "Backup & Export", "User Roles"
+];
+
+return (
+
+{toast && <Toast msg={toast} onDone={() => setToast(null)} />}
+
+  {/* Settings nav cards */}
+  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+    {sections.map(s => (
+      <Card key={s} pad="p-4" className="cursor-pointer hover:border-slate-300 transition-all">
+        <p className="font-black text-slate-900 text-sm">{s}</p>
+        <p className="text-xs text-slate-400 mt-0.5">Configure →</p>
+      </Card>
+    ))}
+  </div>
+
+  {/* Business profile */}
+  <Card>
+    <h2 className="text-xl font-black text-slate-900 mb-1">Business Profile</h2>
+    <p className="text-sm text-slate-400 mb-5">Your company information and details</p>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <Input label="Company Name" value={profile.company} onChange={e => setProfile({ ...profile, company: e.target.value })} />
+      <Input label="Business Phone" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} />
+      <Input label="Email Address" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
+      <Input label="TIN Number" value={profile.tin} onChange={e => setProfile({ ...profile, tin: e.target.value })} />
+      <Input label="Head Office Location" value={profile.location} onChange={e => setProfile({ ...profile, location: e.target.value })} />
+    </div>
+    <div className="mt-5"><Btn onClick={save}>Save Changes</Btn></div>
+  </Card>
+
+  {/* SMS settings */}
+  <Card>
+    <h2 className="text-xl font-black text-slate-900 mb-1">SMS & Notifications</h2>
+    <p className="text-sm text-slate-400 mb-5">Configure automatic alerts</p>
+    <div className="space-y-3">
+      {[
+        { key: "credit", label: "Credit sale notifications", desc: "SMS owner when credit sale is recorded" },
+        { key: "lowStock", label: "Low stock alerts", desc: "Alert when any item drops below 5 units" },
+        { key: "daily", label: "Daily report summary", desc: "Send SMS summary at 8pm daily" },
+      ].map(({ key, label, desc }) => (
+        <div key={key} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+          <div>
+            <p className="font-bold text-slate-900 text-sm">{label}</p>
+            <p className="text-xs text-slate-400">{desc}</p>
+          </div>
+          <button onClick={() => setSms(s => ({ ...s, [key]: !s[key] }))}
+            className={`relative h-6 w-11 rounded-full transition-all ${sms[key] ? "bg-emerald-500" : "bg-slate-200"}`}>
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${sms[key] ? "left-5" : "left-0.5"}`} />
+          </button>
+        </div>
+      ))}
+    </div>
+    <div className="mt-4">
+      <Input label="SMS Sender ID" value={sms.sender} onChange={e => setSms(s => ({ ...s, sender: e.target.value }))} />
+    </div>
+  </Card>
+</div>
+);
+}
+
+// ─── Activity Log ─────────────────────────────────────────────────────────────
+
+function ActivityLog({ activity }) {
+return (
+
+Activity Log
+
+{activity.map((a, i) => (
+
+
+
+{a.text}
+{a.time}
+
+
+))}
+{activity.length === 0 && No activity yet}
+
+
+);
+}
+
+// ─── Saved Report page ────────────────────────────────────────────────────────
+
+function SavedReport({ report, setPage }) {
+if (!report) { return No report saved yet. Go to Enter Book first.; }
+return (
+
+
+
+
+Entry Saved · {report.savedAt}
+{report.branch} Showroom
+
+🔒 LOCKED
+
+
+{[["Total", GHS(report.total)], ["Cash", GHS(report.cash)], ["MoMo", GHS(report.momo)], ["Credit", GHS(report.credit)], ["Profit", GHS(report.profit)], ["Items", report.itemsSold]].map(([k, v]) => (
+
+{k}
+{v}
+
+))}
+
+
+
+<Btn onClick={() => setPage("reports")} variant="dark">View All Reports
+<Btn onClick={() => setPage("entry")} variant="light">New Entry
+🖨 Print
+📱 SMS
+
+
+);
+}
+
+// ─── Login Page ───────────────────────────────────────────────────────────────
+
+function Login({ onLogin }) {
+const [user, setUser] = useState("owner_admin");
+const [pass, setPass] = useState("ChalePay2026");
+const [show, setShow] = useState(false);
+const [loading, setLoading] = useState(false);
+const [err, setErr] = useState("");
+
+function tryLogin() {
+if (!user || !pass) { setErr("Enter your credentials"); return; }
+setLoading(true);
+setTimeout(() => { setLoading(false); onLogin(); }, 900);
+}
+
+return (
+
+
+{/* Left panel */}
+
+
+
+🏢
+
+BranchControl
+by ChalePay
+
+
+Control your building materials business with confidence.
+Real-time stock, multi-branch reporting, credit management, and warehouse control — all in one place.
+
+
+{[["3", "Showrooms"], ["2", "Warehouses"], ["8", "Products"], ["∞", "Reports"]].map(([n, l]) => (
+
+{n}
+{l}
+
+))}
+
+
+    {/* Right panel */}
+    <div className="bg-white p-10 flex flex-col justify-center">
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Owner Portal</p>
+      <h2 className="text-3xl font-black text-slate-900">Welcome back</h2>
+      <p className="text-slate-400 text-sm mt-1 mb-8">Sign in to continue to your dashboard</p>
+
+      <div className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-slate-400">Username</label>
+          <input value={user} onChange={e => setUser(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-slate-400">Password</label>
+          <div className="relative">
+            <input type={show ? "text" : "password"} value={pass} onChange={e => setPass(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white" />
+            <button onClick={() => setShow(!show)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">{show ? "🙈" : "👁"}</button>
+          </div>
+        </div>
+        {err && <p className="text-xs font-bold text-red-600">{err}</p>}
+        <button onClick={tryLogin} disabled={loading}
+          className="w-full rounded-xl bg-slate-900 py-3.5 text-sm font-black text-white transition hover:bg-slate-700 active:scale-95 disabled:opacity-50">
+          {loading ? "Signing in..." : "Sign In →"}
+        </button>
+      </div>
+
+      <p className="text-center text-xs text-slate-400 mt-6">Demo: owner_admin / ChalePay2026</p>
+    </div>
+  </div>
+</div>
+);
+}
+
+// ─── Mobile Nav ───────────────────────────────────────────────────────────────
+
+function MobileNav({ page, setPage }) {
+const [open, setOpen] = useState(false);
+return (
+<>
+<button onClick={() => setOpen(!open)}
+className="fixed top-4 right-4 z-50 lg flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg">
+{open ? "✕" : "☰"}
+
+{open && (
+
+<div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+
+Menu
+{NAV.map(({ id, label, icon }) => (
+<button key={id} onClick={() => { setPage(id); setOpen(false); }}
+className={mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${page === id ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"}}>
+{icon}{label}
+
+))}
+
+
+)}
+</>
+);
+}
+
+// ─── Root App ─────────────────────────────────────────────────────────────────
+
+export default function App() {
+const [loggedIn, setLoggedIn] = useState(false);
+const [page, setPage] = useState("dashboard");
+const [company, setCompany] = useState("ASEDA BUILDING MATERIALS");
+const [stock, setStock] = useState(INIT_STOCK);
+const [reports, setReports] = useState([]);
+const [credits, setCredits] = useState(INIT_CREDITS);
+const [activity, setActivity] = useState([{ time: stamp(), text: "System initialised" }]);
+const [lastSaved, setLastSaved] = useState(null);
+const [selectedBranch, setSelectedBranch] = useState("Spintex");
+
+function addLog(text) { setActivity(a => [{ time: stamp(), text }, ...a].slice(0, 20)); }
+
+function handleFinishEntry(rows, branch, totals) {
+const newStock = structuredClone(stock);
+const newCredits = [];
+rows.forEach(row => {
+const qty = Number(row.sold || 0);
+if (!qty) return;
+newStock[branch][row.code] = Math.max(0, (newStock[branch][row.code] || 0) - qty);
+if (row.pay === "Credit" || row.pay === "Split") {
+const p = PRODUCTS.find(x => x.code === row.code);
+const amount = qty * p.price;
+const paid = row.pay === "Split" ? Number(row.paid || 0) : 0;
+const balance = Math.max(0, amount - paid);
+if (balance > 0) newCredits.push({ id: Date.now() + Math.random(), name: row.customer || "Unnamed Customer", phone: row.phone || "", total: balance, paid: 0, date: new Date().toLocaleDateString("en-GH") });
+}
+});
+const report = { id: Date.now(), branch, date: new Date().toLocaleDateString("en-GH"), savedAt: stamp(), ...totals, status: "LOCKED" };
+setStock(newStock);
+setReports(r => [report, ...r]);
+setCredits(c => [...newCredits, ...c]);
+setLastSaved(report);
+addLog(${branch} entry locked · ${GHS(totals.total)});
+setPage("saved");
+}
+
+if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />;
+
+const pageTitle = NAV.find(n => n.id === page)?.label || "Saved Report";
+
+const content = {
+dashboard: <Dashboard stock={stock} reports={[...reports, ...SAVED_REPORTS]} credits={credits} setPage={setPage} />,
+entry: ,
+stock: ,
+warehouses: ,
+reports: ,
+analytics: ,
+credit: ,
+issues: ,
+settings: ,
+saved: ,
+};
+
+return (
+
+<Sidebar page={page} setPage={setPage} company={company} onLogout={() => setLoggedIn(false)} />
+
+  <main className="lg:pl-64">
+    {/* Header */}
+    <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/80 backdrop-blur px-6 py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-slate-900">{pageTitle}</h1>
+          <p className="text-xs text-slate-400 font-bold">{company} · {stamp()}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-emerald-700">All systems live</span>
+          </div>
+          <button onClick={() => setPage("settings")} className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">⚙️</button>
+        </div>
+      </div>
+    </header>
+
+    {/* Page content */}
+    <section className="p-6 md:p-8 max-w-7xl">
+      {content[page]}
+    </section>
+
+    {/* Activity footer on select pages */}
+    {["dashboard", "warehouses"].includes(page) && (
+      <div className="px-6 md:px-8 pb-8 max-w-7xl">
+        <ActivityLog activity={activity} />
+      </div>
+    )}
+  </main>
+</div>
+);
+}

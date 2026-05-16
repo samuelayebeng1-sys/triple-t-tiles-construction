@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "BranchControl"
+version = "1.0.0"
+id = "artifacts/branch-control"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24600
+
+[services.development]
+run = "pnpm --filter @workspace/branch-control run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/branch-control", "run", "build" ]
+publicDir = "artifacts/branch-control/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24600"
+BASE_PATH = "/"
