@@ -18,12 +18,12 @@ const PIE_COLORS = [
 ];
 
 function heatColor(intensity: number): { bg: string; text: string } {
-  if (intensity === 0)   return { bg: "#f8fafc", text: "#94a3b8" };
-  if (intensity < 0.2)   return { bg: "#dcfce7", text: "#166534" };
-  if (intensity < 0.4)   return { bg: "#86efac", text: "#14532d" };
-  if (intensity < 0.6)   return { bg: "#4ade80", text: "#14532d" };
-  if (intensity < 0.8)   return { bg: "#16a34a", text: "#ffffff" };
-  return                        { bg: "#14532d", text: "#ffffff" };
+  if (intensity === 0)   return { bg: "#f1f5f9", text: "#94a3b8" };
+  if (intensity < 0.2)   return { bg: "#60a5fa", text: "#1e3a5f" };
+  if (intensity < 0.4)   return { bg: "#34d399", text: "#064e3b" };
+  if (intensity < 0.6)   return { bg: "#fde047", text: "#713f12" };
+  if (intensity < 0.8)   return { bg: "#fb923c", text: "#7c2d12" };
+  return                        { bg: "#ef4444", text: "#ffffff" };
 }
 
 function ActiveShape(props: any) {
