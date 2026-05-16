@@ -7,6 +7,7 @@ export const entriesTable = pgTable("entries", {
   branch: text("branch").notNull(),
   totalCash: doublePrecision("total_cash").notNull().default(0),
   totalMomo: doublePrecision("total_momo").notNull().default(0),
+  totalBank: doublePrecision("total_bank").notNull().default(0),
   totalCredit: doublePrecision("total_credit").notNull().default(0),
   totalAmount: doublePrecision("total_amount").notNull().default(0),
   totalProfit: doublePrecision("total_profit").notNull().default(0),

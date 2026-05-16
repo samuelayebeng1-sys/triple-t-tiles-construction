@@ -22,7 +22,7 @@ router.post("/entries", async (req, res): Promise<void> => {
   const products = await db.select().from(productsTable);
   const productMap = new Map(products.map(p => [p.code, p]));
 
-  let totalCash = 0, totalMomo = 0, totalCredit = 0, totalProfit = 0, itemsSold = 0;
+  let totalCash = 0, totalMomo = 0, totalBank = 0, totalCredit = 0, totalProfit = 0, itemsSold = 0;
 
   for (const line of lines) {
     const qty = line.quantitySold;
@@ -36,6 +36,7 @@ router.post("/entries", async (req, res): Promise<void> => {
 
     if (line.paymentMethod === "Cash") totalCash += amount;
     else if (line.paymentMethod === "MoMo") totalMomo += amount;
+    else if (line.paymentMethod === "Bank") totalBank += amount;
     else if (line.paymentMethod === "Credit") totalCredit += amount;
     else if (line.paymentMethod === "Split") {
       const amtPaid = line.amountPaid ?? 0;
@@ -52,11 +53,11 @@ router.post("/entries", async (req, res): Promise<void> => {
       );
   }
 
-  const totalAmount = totalCash + totalMomo + totalCredit;
+  const totalAmount = totalCash + totalMomo + totalBank + totalCredit;
 
   const [entry] = await db
     .insert(entriesTable)
-    .values({ branch, totalCash, totalMomo, totalCredit, totalAmount, totalProfit, itemsSold, status: "LOCKED" })
+    .values({ branch, totalCash, totalMomo, totalBank, totalCredit, totalAmount, totalProfit, itemsSold, status: "LOCKED" })
     .returning();
 
   res.status(201).json({ ...entry, createdAt: entry.createdAt.toISOString() });

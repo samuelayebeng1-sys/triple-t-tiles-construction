@@ -11,6 +11,7 @@ export interface ReportSummary {
   totalProfit: number;
   totalCash: number;
   totalMomo: number;
+  totalBank: number;
   totalCredit: number;
   totalItems: number;
   marginPct: number;

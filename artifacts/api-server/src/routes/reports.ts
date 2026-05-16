@@ -12,6 +12,7 @@ function entryToReport(e: typeof entriesTable.$inferSelect) {
     date: new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" }),
     cash: e.totalCash,
     momo: e.totalMomo,
+    bank: e.totalBank,
     credit: e.totalCredit,
     total: e.totalAmount,
     profit: e.totalProfit,
@@ -31,10 +32,11 @@ router.get("/reports/summary", async (_req, res): Promise<void> => {
   const totalProfit = entries.reduce((s, e) => s + e.totalProfit, 0);
   const totalCash = entries.reduce((s, e) => s + e.totalCash, 0);
   const totalMomo = entries.reduce((s, e) => s + e.totalMomo, 0);
+  const totalBank = entries.reduce((s, e) => s + e.totalBank, 0);
   const totalCredit = entries.reduce((s, e) => s + e.totalCredit, 0);
   const totalItems = entries.reduce((s, e) => s + e.itemsSold, 0);
   const marginPct = totalSales > 0 ? Math.round((totalProfit / totalSales) * 100) : 0;
-  res.json(GetReportsSummaryResponse.parse({ totalSales, totalProfit, totalCash, totalMomo, totalCredit, totalItems, marginPct }));
+  res.json(GetReportsSummaryResponse.parse({ totalSales, totalProfit, totalCash, totalMomo, totalBank, totalCredit, totalItems, marginPct }));
 });
 
 export default router;

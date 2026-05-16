@@ -7,4 +7,4 @@ export const BRANCHES = ["Adenta", "Spintex", "Kasoa"] as const;
 export const WAREHOUSES = ["Main Warehouse", "North Warehouse"] as const;
 export const LOCATIONS = [...BRANCHES, ...WAREHOUSES] as const;
 export const SUPPLIERS = ["Dangote", "Diamond Cement", "Buildmart", "PanTile Ltd", "SteelHub Ghana"];
-export const PAYMENT_METHODS = ["Cash", "MoMo", "Credit", "Split"];
+export const PAYMENT_METHODS = ["Cash", "MoMo", "Bank", "Credit", "Split"];

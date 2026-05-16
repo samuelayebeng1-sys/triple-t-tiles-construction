@@ -100,6 +100,7 @@ export interface Entry {
   branch: string;
   totalCash: number;
   totalMomo: number;
+  totalBank: number;
   totalCredit: number;
   totalAmount: number;
   totalProfit: number;
@@ -114,6 +115,7 @@ export interface Report {
   date: string;
   cash: number;
   momo: number;
+  bank: number;
   credit: number;
   total: number;
   profit: number;
@@ -126,6 +128,7 @@ export interface ReportSummary {
   totalProfit: number;
   totalCash: number;
   totalMomo: number;
+  totalBank: number;
   totalCredit: number;
   totalItems: number;
   marginPct: number;

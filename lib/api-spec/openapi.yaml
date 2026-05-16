@@ -726,7 +726,7 @@ components:
 
     Entry:
       type: object
-      required: [id, branch, totalCash, totalMomo, totalCredit, totalAmount, totalProfit, itemsSold, createdAt, status]
+      required: [id, branch, totalCash, totalMomo, totalBank, totalCredit, totalAmount, totalProfit, itemsSold, createdAt, status]
       properties:
         id:
           type: integer
@@ -735,6 +735,8 @@ components:
         totalCash:
           type: number
         totalMomo:
+          type: number
+        totalBank:
           type: number
         totalCredit:
           type: number
@@ -751,7 +753,7 @@ components:
 
     Report:
       type: object
-      required: [id, branch, date, cash, momo, credit, total, profit, itemsSold, status]
+      required: [id, branch, date, cash, momo, bank, credit, total, profit, itemsSold, status]
       properties:
         id:
           type: integer
@@ -762,6 +764,8 @@ components:
         cash:
           type: number
         momo:
+          type: number
+        bank:
           type: number
         credit:
           type: number
@@ -776,7 +780,7 @@ components:
 
     ReportSummary:
       type: object
-      required: [totalSales, totalProfit, totalCash, totalMomo, totalCredit, totalItems, marginPct]
+      required: [totalSales, totalProfit, totalCash, totalMomo, totalBank, totalCredit, totalItems, marginPct]
       properties:
         totalSales:
           type: number
@@ -785,6 +789,8 @@ components:
         totalCash:
           type: number
         totalMomo:
+          type: number
+        totalBank:
           type: number
         totalCredit:
           type: number

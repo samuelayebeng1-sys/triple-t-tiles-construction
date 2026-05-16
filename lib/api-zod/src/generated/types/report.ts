@@ -12,6 +12,7 @@ export interface Report {
   date: string;
   cash: number;
   momo: number;
+  bank: number;
   credit: number;
   total: number;
   profit: number;

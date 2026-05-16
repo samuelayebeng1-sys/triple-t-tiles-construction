@@ -65,8 +65,8 @@ export default function Entry() {
   }
 
   const totals = useMemo(() => {
-    let cash = 0, momo = 0, credit = 0, profit = 0, items = 0;
-    if (!products) return { cash, momo, credit, total: 0, profit, items };
+    let cash = 0, momo = 0, bank = 0, credit = 0, profit = 0, items = 0;
+    if (!products) return { cash, momo, bank, credit, total: 0, profit, items };
     rows.forEach(row => {
       const qty = Number(row.sold || 0);
       if (!qty) return;
@@ -77,6 +77,7 @@ export default function Entry() {
       profit += qty * (p.price - p.cost);
       if (row.pay === "Cash") cash += amount;
       else if (row.pay === "MoMo") momo += amount;
+      else if (row.pay === "Bank") bank += amount;
       else if (row.pay === "Credit") credit += amount;
       else if (row.pay === "Split") {
         const pd = Number(row.paid || 0);
@@ -84,7 +85,7 @@ export default function Entry() {
         credit += Math.max(0, amount - pd);
       }
     });
-    return { cash, momo, credit, total: cash + momo + credit, profit, items };
+    return { cash, momo, bank, credit, total: cash + momo + bank + credit, profit, items };
   }, [rows, products]);
 
   async function handleFinish() {
@@ -273,10 +274,11 @@ export default function Entry() {
 
       {/* Totals */}
       <div className="grid gap-4 md:grid-cols-[1fr_340px]">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {[
             { label: "Cash", value: GHS(totals.cash), color: "text-emerald-600" },
             { label: "MoMo", value: GHS(totals.momo), color: "text-blue-600" },
+            { label: "Bank", value: GHS(totals.bank), color: "text-indigo-600" },
             { label: "Credit", value: GHS(totals.credit), color: "text-red-600" },
             { label: "Profit", value: GHS(totals.profit), color: "text-purple-600" },
           ].map(({ label, value, color }) => (

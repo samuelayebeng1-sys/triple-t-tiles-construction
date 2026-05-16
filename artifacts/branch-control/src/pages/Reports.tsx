@@ -29,11 +29,12 @@ function PdfPreview({ totals, filtered, period, branchFilter }: { totals: any; f
       </div>
 
       {/* Summary row */}
-      <div className="grid grid-cols-4 border-b border-gray-100">
+      <div className="grid grid-cols-5 border-b border-gray-100">
         {[
-          { label: "Total Sales", value: GHS(totals.totalSales), color: "#111" },
+          { label: "Total Sales", value: GHS(totals.totalSales),  color: "#111" },
           { label: "Net Profit",  value: GHS(totals.totalProfit), color: "#059669" },
           { label: "Cash",        value: GHS(totals.totalCash),   color: "#2563eb" },
+          { label: "Bank",        value: GHS(totals.totalBank),   color: "#4f46e5" },
           { label: "Credit",      value: GHS(totals.totalCredit), color: "#dc2626" },
         ].map(({ label, value, color }) => (
           <div key={label} className="px-4 py-3 border-r border-gray-100 last:border-r-0">
@@ -51,7 +52,7 @@ function PdfPreview({ totals, filtered, period, branchFilter }: { totals: any; f
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                {["Branch", "Date", "Total", "Cash", "MoMo", "Credit", "Profit", "Margin"].map(h => (
+                {["Branch", "Date", "Total", "Cash", "MoMo", "Bank", "Credit", "Profit", "Margin"].map(h => (
                   <th key={h} className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-widest text-gray-400">{h}</th>
                 ))}
               </tr>
@@ -64,6 +65,7 @@ function PdfPreview({ totals, filtered, period, branchFilter }: { totals: any; f
                   <td className="px-3 py-2 font-black">{GHS(r.total)}</td>
                   <td className="px-3 py-2 text-[#059669] font-bold">{GHS(r.cash)}</td>
                   <td className="px-3 py-2 text-[#2563eb] font-bold">{GHS(r.momo)}</td>
+                  <td className="px-3 py-2 text-[#4f46e5] font-bold">{GHS(r.bank)}</td>
                   <td className="px-3 py-2 text-[#dc2626] font-bold">{GHS(r.credit)}</td>
                   <td className="px-3 py-2 text-[#7c3aed] font-bold">{GHS(r.profit)}</td>
                   <td className="px-3 py-2 text-gray-500">{pct(r.profit, r.total)}%</td>
@@ -85,7 +87,7 @@ function PdfPreview({ totals, filtered, period, branchFilter }: { totals: any; f
 
 /* ── Excel Spreadsheet Preview ── */
 function ExcelPreview({ totals, filtered, period, branchFilter }: { totals: any; filtered: any[]; period: string; branchFilter: string }) {
-  const cols = ["Branch", "Date", "Status", "Total", "Cash", "MoMo", "Credit", "Profit", "Margin"];
+  const cols = ["Branch", "Date", "Status", "Total", "Cash", "MoMo", "Bank", "Credit", "Profit", "Margin"];
   return (
     <div className="rounded-xl border border-gray-200 overflow-hidden text-[10px] bg-white">
       {/* Toolbar strip */}
@@ -101,12 +103,13 @@ function ExcelPreview({ totals, filtered, period, branchFilter }: { totals: any;
       </div>
 
       {/* Summary kpis */}
-      <div className="grid grid-cols-4 border-b border-gray-200 bg-[#e8f4f0]/60">
+      <div className="grid grid-cols-5 border-b border-gray-200 bg-[#e8f4f0]/60">
         {[
           { label: "TOTAL SALES", value: GHS(totals.totalSales) },
           { label: "NET PROFIT",  value: GHS(totals.totalProfit) },
           { label: "CASH",        value: GHS(totals.totalCash) },
           { label: "MOMO",        value: GHS(totals.totalMomo) },
+          { label: "BANK",        value: GHS(totals.totalBank) },
         ].map(({ label, value }) => (
           <div key={label} className="px-3 py-2 border-r border-gray-200 last:border-r-0">
             <p className="text-gray-400 text-[8px] font-black tracking-widest">{label}</p>
@@ -140,6 +143,7 @@ function ExcelPreview({ totals, filtered, period, branchFilter }: { totals: any;
                 <td className="px-2 py-1.5 font-black border-r border-gray-100">{GHS(r.total)}</td>
                 <td className="px-2 py-1.5 text-[#059669] font-bold border-r border-gray-100">{GHS(r.cash)}</td>
                 <td className="px-2 py-1.5 text-[#2563eb] font-bold border-r border-gray-100">{GHS(r.momo)}</td>
+                <td className="px-2 py-1.5 text-[#4f46e5] font-bold border-r border-gray-100">{GHS(r.bank)}</td>
                 <td className="px-2 py-1.5 text-[#dc2626] font-bold border-r border-gray-100">{GHS(r.credit)}</td>
                 <td className="px-2 py-1.5 text-[#7c3aed] font-bold border-r border-gray-100">{GHS(r.profit)}</td>
                 <td className="px-2 py-1.5 text-gray-400">{pct(r.profit, r.total)}%</td>
@@ -155,6 +159,7 @@ function ExcelPreview({ totals, filtered, period, branchFilter }: { totals: any;
                 <td className="px-2 py-1.5 border-r border-gray-100">{GHS(filtered.reduce((s,r)=>s+r.total,0))}</td>
                 <td className="px-2 py-1.5 border-r border-gray-100 text-[#059669]">{GHS(filtered.reduce((s,r)=>s+r.cash,0))}</td>
                 <td className="px-2 py-1.5 border-r border-gray-100 text-[#2563eb]">{GHS(filtered.reduce((s,r)=>s+r.momo,0))}</td>
+                <td className="px-2 py-1.5 border-r border-gray-100 text-[#4f46e5]">{GHS(filtered.reduce((s,r)=>s+r.bank,0))}</td>
                 <td className="px-2 py-1.5 border-r border-gray-100 text-[#dc2626]">{GHS(filtered.reduce((s,r)=>s+r.credit,0))}</td>
                 <td className="px-2 py-1.5 border-r border-gray-100 text-[#7c3aed]">{GHS(filtered.reduce((s,r)=>s+r.profit,0))}</td>
                 <td className="px-2 py-1.5" />
@@ -282,7 +287,7 @@ export default function Reports() {
   const { data: reports, isLoading: reportsLoading } = useListReports();
   const { data: summary, isLoading: summaryLoading } = useGetReportsSummary();
 
-  const totals = summary ?? { totalSales: 0, totalProfit: 0, totalCash: 0, totalMomo: 0, totalCredit: 0, totalItems: 0, marginPct: 0 };
+  const totals = summary ?? { totalSales: 0, totalProfit: 0, totalCash: 0, totalMomo: 0, totalBank: 0, totalCredit: 0, totalItems: 0, marginPct: 0 };
   const filtered = (reports ?? []).filter(r => branchFilter === "All" || r.branch === branchFilter);
   const grandTotal = filtered.reduce((s, r) => s + r.total, 0);
 
@@ -324,10 +329,11 @@ export default function Reports() {
         )}
         <p className="text-muted-foreground mt-1">{totals.totalItems} items sold</p>
 
-        <div className="mt-6 pt-5 border-t border-border grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="mt-6 pt-5 border-t border-border grid grid-cols-2 gap-3 md:grid-cols-6">
           {[
             { label: "Cash",   value: GHS(totals.totalCash),   color: "text-emerald-600" },
             { label: "MoMo",   value: GHS(totals.totalMomo),   color: "text-blue-600" },
+            { label: "Bank",   value: GHS(totals.totalBank),   color: "text-indigo-600" },
             { label: "Credit", value: GHS(totals.totalCredit), color: "text-red-600" },
             { label: "Profit", value: GHS(totals.totalProfit), color: "text-purple-600" },
             { label: "Margin", value: `${totals.marginPct}%`,  color: "text-amber-600" },
@@ -413,6 +419,12 @@ export default function Reports() {
                     <span className="text-xs font-bold text-muted-foreground">MoMo</span>
                     <span className="font-black text-blue-600">{GHS(r.momo)}</span>
                   </div>
+                  {r.bank > 0 && (
+                    <div className="flex gap-2 justify-end">
+                      <span className="text-xs font-bold text-muted-foreground">Bank</span>
+                      <span className="font-black text-indigo-600">{GHS(r.bank)}</span>
+                    </div>
+                  )}
                   <div className="flex gap-2 justify-end">
                     <span className="text-xs font-bold text-muted-foreground">Credit</span>
                     <span className="font-black text-red-600">{GHS(r.credit)}</span>

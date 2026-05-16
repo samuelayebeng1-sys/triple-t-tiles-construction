@@ -11,6 +11,7 @@ export interface Entry {
   branch: string;
   totalCash: number;
   totalMomo: number;
+  totalBank: number;
   totalCredit: number;
   totalAmount: number;
   totalProfit: number;
