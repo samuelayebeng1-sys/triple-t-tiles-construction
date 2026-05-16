@@ -4,7 +4,7 @@ import {
   useListSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier,
   useListProducts, useCreateProduct, useUpdateProduct, useDeleteProduct,
   useListLocations, useCreateLocation, useUpdateLocation, useDeleteLocation,
-  useGetStock,
+  useGetStock, useListEntries,
   getGetSettingsQueryKey, getListSuppliersQueryKey, getGetStockQueryKey,
   getListProductsQueryKey, getListLocationsQueryKey,
 } from "@workspace/api-client-react";
@@ -13,11 +13,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save, Plus, Pencil, Trash2, X, ChevronRight, ArrowLeft,
-  Building2, Truck, Package, MessageSquare, Palette, Upload, MapPin, Layers,
+  Building2, Truck, Package, MessageSquare, Palette, Upload, MapPin, Layers, History,
+  FileText, Table2,
 } from "lucide-react";
 import { applyAllColors, applyAccentColor, applyLoginGlowColor, applyContentBarColor, applySidebarColor, applyLoginPanelBg, applyLoginRightBg, applyContentBg } from "@/lib/theme";
+import { GHS, pct, BRANCHES } from "@/lib/format";
 
-type Page = "business" | "suppliers" | "products" | "locations" | "initialStock" | "sms" | "colours" | null;
+type Page = "business" | "suppliers" | "products" | "locations" | "initialStock" | "sms" | "colours" | "history" | null;
 
 function InitialStockPanel({ products, locations, stockMap, setStockMap, onSave }: {
   products: any[];
@@ -137,6 +139,291 @@ function InitialStockPanel({ products, locations, stockMap, setStockMap, onSave 
   );
 }
 
+/* ── History Export Modals ── */
+function HistoryPdfPreview({ entries, branchFilter }: { entries: any[]; branchFilter: string }) {
+  const companyName = localStorage.getItem("bc_company") || "BranchControl";
+  const today = new Date().toLocaleDateString("en-GH", { year: "numeric", month: "long", day: "numeric" });
+  const filtered = branchFilter === "All" ? entries : entries.filter(e => e.branch === branchFilter);
+  const totalSales = filtered.reduce((s, e) => s + e.totalAmount, 0);
+  const totalProfit = filtered.reduce((s, e) => s + e.totalProfit, 0);
+  const totalCash = filtered.reduce((s, e) => s + e.totalCash, 0);
+  const totalBank = filtered.reduce((s, e) => s + (e.totalBank ?? 0), 0);
+  const totalCredit = filtered.reduce((s, e) => s + e.totalCredit, 0);
+  return (
+    <div className="bg-white text-[#111] rounded-xl border border-gray-200 shadow-inner overflow-hidden text-[11px]">
+      <div className="bg-[#0f172a] px-5 py-4 flex items-center justify-between">
+        <div>
+          <p className="text-white font-black text-sm">{companyName}</p>
+          <p className="text-white/50 text-[10px] mt-0.5">Entry History · {branchFilter === "All" ? "All Branches" : branchFilter}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-white/70 text-[10px]">{today}</p>
+          <p className="text-white/50 text-[10px]">{filtered.length} entries</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-5 border-b border-gray-100">
+        {[
+          { label: "Total Sales", value: GHS(totalSales),  color: "#111" },
+          { label: "Net Profit",  value: GHS(totalProfit), color: "#059669" },
+          { label: "Cash",        value: GHS(totalCash),   color: "#2563eb" },
+          { label: "Bank",        value: GHS(totalBank),   color: "#4f46e5" },
+          { label: "Credit",      value: GHS(totalCredit), color: "#dc2626" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="px-4 py-3 border-r border-gray-100 last:border-r-0">
+            <p className="text-gray-400 text-[9px] uppercase tracking-widest font-bold">{label}</p>
+            <p className="font-black text-xs mt-0.5" style={{ color }}>{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="overflow-auto max-h-52">
+        {filtered.length === 0 ? (
+          <p className="text-center text-gray-400 py-6">No entries found.</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                {["Branch", "Date", "Total", "Cash", "MoMo", "Bank", "Credit", "Profit", "Items"].map(h => (
+                  <th key={h} className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-widest text-gray-400">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((e, i) => (
+                <tr key={e.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/60"}>
+                  <td className="px-3 py-2 font-bold">{e.branch}</td>
+                  <td className="px-3 py-2 text-gray-500">{new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" })}</td>
+                  <td className="px-3 py-2 font-black">{GHS(e.totalAmount)}</td>
+                  <td className="px-3 py-2 text-[#059669] font-bold">{GHS(e.totalCash)}</td>
+                  <td className="px-3 py-2 text-[#2563eb] font-bold">{GHS(e.totalMomo)}</td>
+                  <td className="px-3 py-2 text-[#4f46e5] font-bold">{GHS(e.totalBank ?? 0)}</td>
+                  <td className="px-3 py-2 text-[#dc2626] font-bold">{GHS(e.totalCredit)}</td>
+                  <td className="px-3 py-2 text-[#7c3aed] font-bold">{GHS(e.totalProfit)}</td>
+                  <td className="px-3 py-2 text-gray-500">{e.itemsSold}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className="px-5 py-2.5 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+        <p className="text-gray-300 text-[9px]">Generated by BranchControl · ChalePay</p>
+        <p className="text-gray-300 text-[9px]">{filtered.length} records</p>
+      </div>
+    </div>
+  );
+}
+
+function HistoryExcelPreview({ entries, branchFilter }: { entries: any[]; branchFilter: string }) {
+  const filtered = branchFilter === "All" ? entries : entries.filter(e => e.branch === branchFilter);
+  const cols = ["Branch", "Date", "Status", "Total", "Cash", "MoMo", "Bank", "Credit", "Profit", "Items"];
+  return (
+    <div className="rounded-xl border border-gray-200 overflow-hidden text-[10px] bg-white">
+      <div className="bg-[#1d6f42] px-4 py-2 flex items-center gap-2">
+        <Table2 className="h-3.5 w-3.5 text-white/80" />
+        <span className="text-white font-bold text-[11px]">BranchControl_History.xlsx</span>
+      </div>
+      <div className="flex bg-gray-100 border-b border-gray-200 px-2 pt-1.5 gap-1">
+        <div className="bg-white border border-gray-200 border-b-0 rounded-t px-3 py-1 text-[10px] font-black text-[#1d6f42]">History</div>
+        <div className="bg-gray-50 border border-gray-200 border-b-0 rounded-t px-3 py-1 text-[10px] text-gray-400">By Branch</div>
+      </div>
+      <div className="grid grid-cols-4 border-b border-gray-200 bg-[#e8f4f0]/60">
+        {[
+          { label: "TOTAL",  value: GHS(filtered.reduce((s,e)=>s+e.totalAmount,0)) },
+          { label: "PROFIT", value: GHS(filtered.reduce((s,e)=>s+e.totalProfit,0)) },
+          { label: "CASH",   value: GHS(filtered.reduce((s,e)=>s+e.totalCash,0)) },
+          { label: "BANK",   value: GHS(filtered.reduce((s,e)=>s+(e.totalBank??0),0)) },
+        ].map(({ label, value }) => (
+          <div key={label} className="px-3 py-2 border-r border-gray-200 last:border-r-0">
+            <p className="text-gray-400 text-[8px] font-black tracking-widest">{label}</p>
+            <p className="font-black text-[11px] text-[#1d6f42] mt-0.5">{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="overflow-auto max-h-52">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-[#1d6f42]">
+              <th className="w-8 px-2 py-1.5 text-white/60 text-[9px] font-normal border-r border-white/10">#</th>
+              {cols.map(c => (
+                <th key={c} className="px-2 py-1.5 text-left text-[9px] font-black text-white border-r border-white/10 last:border-r-0 whitespace-nowrap">{c}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={cols.length + 1} className="text-center text-gray-400 py-5">No data</td></tr>
+            ) : filtered.map((e, i) => (
+              <tr key={e.id} className={i % 2 === 0 ? "bg-white" : "bg-[#f0faf5]/60"}>
+                <td className="px-2 py-1.5 text-gray-300 text-center border-r border-gray-100">{i + 1}</td>
+                <td className="px-2 py-1.5 font-bold border-r border-gray-100">{e.branch}</td>
+                <td className="px-2 py-1.5 text-gray-500 border-r border-gray-100">{new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" })}</td>
+                <td className="px-2 py-1.5 border-r border-gray-100">
+                  <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold text-[8px]">{e.status}</span>
+                </td>
+                <td className="px-2 py-1.5 font-black border-r border-gray-100">{GHS(e.totalAmount)}</td>
+                <td className="px-2 py-1.5 text-[#059669] font-bold border-r border-gray-100">{GHS(e.totalCash)}</td>
+                <td className="px-2 py-1.5 text-[#2563eb] font-bold border-r border-gray-100">{GHS(e.totalMomo)}</td>
+                <td className="px-2 py-1.5 text-[#4f46e5] font-bold border-r border-gray-100">{GHS(e.totalBank ?? 0)}</td>
+                <td className="px-2 py-1.5 text-[#dc2626] font-bold border-r border-gray-100">{GHS(e.totalCredit)}</td>
+                <td className="px-2 py-1.5 text-[#7c3aed] font-bold border-r border-gray-100">{GHS(e.totalProfit)}</td>
+                <td className="px-2 py-1.5 text-gray-500">{e.itemsSold}</td>
+              </tr>
+            ))}
+            {filtered.length > 0 && (
+              <tr className="bg-[#1d6f42]/5 border-t-2 border-[#1d6f42]/20 font-black">
+                <td className="px-2 py-1.5 border-r border-gray-100" />
+                <td className="px-2 py-1.5 border-r border-gray-100 text-[#1d6f42]" colSpan={3}>TOTAL</td>
+                <td className="px-2 py-1.5 border-r border-gray-100">{GHS(filtered.reduce((s,e)=>s+e.totalAmount,0))}</td>
+                <td className="px-2 py-1.5 border-r border-gray-100 text-[#059669]">{GHS(filtered.reduce((s,e)=>s+e.totalCash,0))}</td>
+                <td className="px-2 py-1.5 border-r border-gray-100 text-[#2563eb]">{GHS(filtered.reduce((s,e)=>s+e.totalMomo,0))}</td>
+                <td className="px-2 py-1.5 border-r border-gray-100 text-[#4f46e5]">{GHS(filtered.reduce((s,e)=>s+(e.totalBank??0),0))}</td>
+                <td className="px-2 py-1.5 border-r border-gray-100 text-[#dc2626]">{GHS(filtered.reduce((s,e)=>s+e.totalCredit,0))}</td>
+                <td className="px-2 py-1.5 border-r border-gray-100 text-[#7c3aed]">{GHS(filtered.reduce((s,e)=>s+e.totalProfit,0))}</td>
+                <td className="px-2 py-1.5 text-gray-400">{filtered.reduce((s,e)=>s+e.itemsSold,0)}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function HistoryPanel({ entries, isLoading }: { entries: any[]; isLoading: boolean }) {
+  const [branchFilter, setBranchFilter] = useState("All");
+  const [exportType, setExportType] = useState<"pdf" | "excel" | null>(null);
+  const BRANCH_FILTERS = ["All", ...BRANCHES];
+  const filtered = branchFilter === "All" ? entries : entries.filter(e => e.branch === branchFilter);
+  const sorted = [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const totalSales = filtered.reduce((s, e) => s + e.totalAmount, 0);
+  const totalProfit = filtered.reduce((s, e) => s + e.totalProfit, 0);
+
+  return (
+    <div className="border-t border-border">
+      {/* Export modal */}
+      {exportType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setExportType(null)}>
+          <div className="bg-card rounded-2xl shadow-2xl border border-border w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                {exportType === "pdf" ? <FileText className="h-5 w-5 text-red-500" /> : <Table2 className="h-5 w-5 text-emerald-500" />}
+                <div>
+                  <p className="font-black text-foreground">{exportType === "pdf" ? "PDF Preview" : "Excel Preview"}</p>
+                  <p className="text-xs text-muted-foreground">{branchFilter === "All" ? "All Branches" : branchFilter} · {filtered.length} entries</p>
+                </div>
+              </div>
+              <button onClick={() => setExportType(null)} className="rounded-xl p-2 hover:bg-muted transition-all"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              {exportType === "pdf"
+                ? <HistoryPdfPreview entries={entries} branchFilter={branchFilter} />
+                : <HistoryExcelPreview entries={entries} branchFilter={branchFilter} />
+              }
+              <div className="rounded-xl bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+                This is a preview. Full export functionality can be integrated with a PDF/Excel library.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters + export */}
+      <div className="px-6 pt-5 pb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2 flex-wrap items-center">
+          <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Branch</span>
+          {BRANCH_FILTERS.map(b => (
+            <button key={b} onClick={() => setBranchFilter(b)}
+              className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${branchFilter === b ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+              {b}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setExportType("pdf")}
+            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all">
+            <FileText className="h-3.5 w-3.5 text-red-500" /> Export PDF
+          </button>
+          <button onClick={() => setExportType("excel")}
+            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all">
+            <Table2 className="h-3.5 w-3.5 text-emerald-500" /> Excel
+          </button>
+        </div>
+      </div>
+
+      {/* Summary bar */}
+      <div className="mx-6 mb-4 rounded-xl border border-border bg-muted/30 px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Entries", value: String(filtered.length),    color: "text-foreground" },
+          { label: "Total Sales", value: GHS(totalSales),        color: "text-primary" },
+          { label: "Total Profit", value: GHS(totalProfit),       color: "text-purple-600" },
+          { label: "Margin", value: `${pct(totalProfit, totalSales)}%`, color: "text-amber-600" },
+        ].map(({ label, value, color }) => (
+          <div key={label}>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+            <p className={`mt-1 text-lg font-black ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="px-6 pb-6">
+        <div className="rounded-xl border border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            {isLoading ? (
+              <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-10 w-full rounded-xl" />)}</div>
+            ) : sorted.length === 0 ? (
+              <div className="py-12 text-center">
+                <p className="text-muted-foreground text-sm">No entries recorded yet.</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/50 border-b border-border">
+                    {["Branch", "Date", "Total", "Cash", "MoMo", "Bank", "Credit", "Profit", "Items", "Status"].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((e, i) => (
+                    <tr key={e.id} className={`border-b border-border/50 ${i % 2 === 0 ? "" : "bg-muted/20"}`}>
+                      <td className="px-4 py-3 font-black text-foreground">{e.branch}</td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" })}</td>
+                      <td className="px-4 py-3 font-black whitespace-nowrap">{GHS(e.totalAmount)}</td>
+                      <td className="px-4 py-3 text-emerald-600 font-bold whitespace-nowrap">{GHS(e.totalCash)}</td>
+                      <td className="px-4 py-3 text-blue-600 font-bold whitespace-nowrap">{GHS(e.totalMomo)}</td>
+                      <td className="px-4 py-3 text-indigo-600 font-bold whitespace-nowrap">{GHS(e.totalBank ?? 0)}</td>
+                      <td className="px-4 py-3 text-red-600 font-bold whitespace-nowrap">{GHS(e.totalCredit)}</td>
+                      <td className="px-4 py-3 text-purple-600 font-bold whitespace-nowrap">{GHS(e.totalProfit)}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{e.itemsSold}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{e.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-primary/5 border-t-2 border-primary/20">
+                    <td className="px-4 py-3 font-black text-foreground text-xs uppercase tracking-widest" colSpan={2}>Totals</td>
+                    <td className="px-4 py-3 font-black whitespace-nowrap">{GHS(filtered.reduce((s,e)=>s+e.totalAmount,0))}</td>
+                    <td className="px-4 py-3 text-emerald-600 font-black whitespace-nowrap">{GHS(filtered.reduce((s,e)=>s+e.totalCash,0))}</td>
+                    <td className="px-4 py-3 text-blue-600 font-black whitespace-nowrap">{GHS(filtered.reduce((s,e)=>s+e.totalMomo,0))}</td>
+                    <td className="px-4 py-3 text-indigo-600 font-black whitespace-nowrap">{GHS(filtered.reduce((s,e)=>s+(e.totalBank??0),0))}</td>
+                    <td className="px-4 py-3 text-red-600 font-black whitespace-nowrap">{GHS(filtered.reduce((s,e)=>s+e.totalCredit,0))}</td>
+                    <td className="px-4 py-3 text-purple-600 font-black whitespace-nowrap">{GHS(filtered.reduce((s,e)=>s+e.totalProfit,0))}</td>
+                    <td className="px-4 py-3 font-black text-foreground">{filtered.reduce((s,e)=>s+e.itemsSold,0)}</td>
+                    <td className="px-4 py-3" />
+                  </tr>
+                </tfoot>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const BLANK_PRODUCT = { id: null as number | null, code: "", name: "", category: "", price: "", cost: "", unit: "" };
 const BLANK_LOC = { id: null as number | null, name: "", type: "branch" };
 
@@ -214,6 +501,7 @@ export default function Settings() {
   const updateLocation = useUpdateLocation();
   const deleteLocation = useDeleteLocation();
   const { data: stock } = useGetStock({ query: { queryKey: getGetStockQueryKey() } });
+  const { data: entries, isLoading: entriesLoading } = useListEntries();
 
   const [profile, setProfile] = useState({
     companyName: "", phone: "", email: "", logoUrl: "",
@@ -415,6 +703,7 @@ export default function Settings() {
     { id: "suppliers" as Page,     icon: Truck,         title: "Suppliers",               desc: "Add, edit and remove your suppliers",                   count: suppliers?.length ?? null },
     { id: "products" as Page,      icon: Package,       title: "Products",                desc: "Your product catalogue with pricing",                   count: products?.length ?? null },
     { id: "initialStock" as Page,  icon: Layers,        title: "Initial Stock Setup",     desc: "Set opening stock quantities before going live",        count: null },
+    { id: "history" as Page,       icon: History,       title: "Entry History",           desc: "All locked daily entries with PDF & Excel export",      count: null },
   ];
 
   const currentTile = NAV_TILES.find(t => t.id === page);
@@ -780,6 +1069,10 @@ export default function Settings() {
               />
             )}
 
+            {page === "history" && (
+              <HistoryPanel entries={entries ?? []} isLoading={entriesLoading} />
+            )}
+
           </div>
         </>
       ) : (
@@ -790,7 +1083,7 @@ export default function Settings() {
             <p className="text-sm text-muted-foreground">Configure your business, interface, products, and locations</p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {NAV_TILES.map(({ id, icon: Icon, title, desc, count }) => (
               <button
                 key={id}
