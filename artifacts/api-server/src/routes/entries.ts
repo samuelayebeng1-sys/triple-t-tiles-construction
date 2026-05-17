@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
 import { db, entriesTable, entryItemsTable, stockLevelsTable, productsTable } from "@workspace/db";
 import { ListEntriesResponse, CreateEntryBody, GetEntryItemsResponse } from "@workspace/api-zod";
+import { notifyCreditSale, notifyLowStock, LOW_STOCK_THRESHOLD } from "../lib/notifications.js";
 
 const router: IRouter = Router();
 
@@ -98,7 +99,52 @@ router.post("/entries", async (req, res): Promise<void> => {
     await db.insert(entryItemsTable).values(itemRows.map(r => ({ ...r, entryId: entry.id })));
   }
 
+  // Respond first so the request isn't blocked on outbound SMS calls.
   res.status(201).json({ ...entry, createdAt: entry.createdAt.toISOString() });
+
+  // Fire-and-forget notifications.
+  void (async () => {
+    try {
+      // Credit sale alert
+      if (totalCredit > 0) {
+        const creditRow = itemRows.find(r => r.paymentMethod === "Credit" || r.paymentMethod === "Split");
+        const productSummary = itemRows
+          .filter(r => r.paymentMethod === "Credit" || r.paymentMethod === "Split")
+          .map(r => `${r.qty} × ${r.productName}`)
+          .slice(0, 3)
+          .join(", ");
+        await notifyCreditSale({
+          branch,
+          customerName: creditRow?.customerName ?? null,
+          customerPhone: creditRow?.customerPhone ?? null,
+          creditAmount: totalCredit,
+          productSummary: productSummary || "items",
+        });
+      }
+
+      // Low-stock alert: re-read stock for the affected branch+products and report any at/under threshold.
+      const codes = Array.from(new Set(itemRows.map(r => r.productCode)));
+      if (codes.length > 0) {
+        const lows = await db
+          .select({ productCode: stockLevelsTable.productCode, quantity: stockLevelsTable.quantity })
+          .from(stockLevelsTable)
+          .where(sql`${stockLevelsTable.location} = ${branch} AND ${stockLevelsTable.productCode} = ANY(${codes}) AND ${stockLevelsTable.quantity} <= ${LOW_STOCK_THRESHOLD}`);
+        if (lows.length > 0) {
+          const nameByCode = new Map(itemRows.map(r => [r.productCode, r.productName]));
+          await notifyLowStock(
+            lows.map(l => ({
+              productName: nameByCode.get(l.productCode) ?? l.productCode,
+              location: branch,
+              quantity: l.quantity,
+            }))
+          );
+        }
+      }
+    } catch (err) {
+      // Already logged inside notifications; swallow to avoid unhandled rejection.
+      void err;
+    }
+  })();
 });
 
 export default router;
