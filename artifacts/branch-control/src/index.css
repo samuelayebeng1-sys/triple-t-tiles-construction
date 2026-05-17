@@ -205,38 +205,64 @@
   * {
     @apply border-border;
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.45) hsl(var(--muted) / 0.5);
+    scrollbar-color: hsl(var(--border)) transparent;
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
   ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Page content scrollbar — more visible than the sidebar's */
+  main.page-scroll,
+  main.page-scroll *:not(nav *) {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.5) hsl(var(--muted) / 0.4);
+  }
+  main.page-scroll::-webkit-scrollbar,
+  .page-scroll-inner::-webkit-scrollbar {
     width: 12px;
     height: 12px;
   }
-  ::-webkit-scrollbar-track {
-    background: hsl(var(--muted) / 0.4);
+  main.page-scroll::-webkit-scrollbar-track,
+  .page-scroll-inner::-webkit-scrollbar-track {
+    background: hsl(var(--muted) / 0.35);
     border-left: 1px solid hsl(var(--border));
   }
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.4);
+  main.page-scroll::-webkit-scrollbar-thumb,
+  .page-scroll-inner::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.45);
     border-radius: 999px;
     border: 3px solid transparent;
     background-clip: padding-box;
     min-height: 40px;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.65);
+  main.page-scroll::-webkit-scrollbar-thumb:hover,
+  .page-scroll-inner::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.7);
     background-clip: padding-box;
     border: 3px solid transparent;
   }
-  ::-webkit-scrollbar-thumb:active {
-    background: hsl(var(--muted-foreground) / 0.85);
+  main.page-scroll::-webkit-scrollbar-thumb:active,
+  .page-scroll-inner::-webkit-scrollbar-thumb:active {
+    background: hsl(var(--muted-foreground) / 0.9);
     background-clip: padding-box;
     border: 3px solid transparent;
-  }
-  ::-webkit-scrollbar-corner {
-    background: transparent;
   }
 }
 
