@@ -74,16 +74,22 @@ export async function sendSms(opts: SendSmsOptions): Promise<SendSmsResult> {
 
     const recipients = json.SMSMessageData?.Recipients ?? [];
     const successful = recipients.filter(r => r.status === "Success").length;
+    const summary = json.SMSMessageData?.Message;
 
-    // AT considers the API call OK even when individual recipients fail (e.g. InvalidPhoneNumber).
-    // Surface that so the user knows.
-    if (successful === 0 && recipients.length > 0) {
-      const statuses = recipients.map(r => `${r.number ?? "?"}: ${r.status ?? "Unknown"}`).join(", ");
-      logger.warn({ statuses, summary: json.SMSMessageData?.Message }, "All SMS recipients failed");
-      return { ok: false, error: json.SMSMessageData?.Message || statuses };
+    // AT considers the API call OK even when individual recipients fail (e.g. InvalidPhoneNumber,
+    // or when no recipients are returned at all, e.g. sandbox numbers not whitelisted).
+    if (successful === 0) {
+      const statuses = recipients.length > 0
+        ? recipients.map(r => `${r.number ?? "?"} → ${r.status ?? "Unknown"}`).join("; ")
+        : "No recipients accepted by Africa's Talking";
+      const hint = username === "sandbox"
+        ? " (Sandbox: numbers must be added as test phones in your Africa's Talking dashboard)"
+        : "";
+      logger.warn({ statuses, summary }, "All SMS recipients failed");
+      return { ok: false, error: `${summary ? summary + " — " : ""}${statuses}${hint}` };
     }
 
-    logger.info({ successful, total: recipients.length, summary: json.SMSMessageData?.Message }, "SMS sent via Africa's Talking");
+    logger.info({ successful, total: recipients.length, summary }, "SMS sent via Africa's Talking");
     return { ok: true, recipients: successful };
   } catch (err) {
     logger.error({ err }, "SMS send failed");
