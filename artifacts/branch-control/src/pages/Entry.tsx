@@ -114,6 +114,9 @@ export default function Entry() {
     function onKey(e: KeyboardEvent) {
       const ctrl = e.ctrlKey || e.metaKey;
       if (!ctrl) return;
+      // Don't intercept when the user is actively typing in a field
+      const tag = (document.activeElement?.tagName ?? "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
       if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
       if ((e.key === "y") || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
     }
