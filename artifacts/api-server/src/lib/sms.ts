@@ -45,7 +45,8 @@ export async function sendSms(opts: SendSmsOptions): Promise<SendSmsResult> {
     to: numbers.join(","),
     message: opts.message,
   });
-  if (opts.senderId) body.set("from", opts.senderId);
+  // Sandbox accounts can't use custom sender IDs — omit and let AT use the default shortcode.
+  if (opts.senderId && username !== "sandbox") body.set("from", opts.senderId);
 
   try {
     const res = await fetch(apiUrl, {
