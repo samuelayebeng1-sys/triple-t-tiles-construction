@@ -219,7 +219,7 @@ export default function Settings() {
     companyName: "", phone: "", email: "", logoUrl: "",
     accentColor: "#0f172a", loginGlowColor: "#7c3aed", contentBarColor: "#0f172a",
     sidebarColor: "#0f172a", loginPanelBg: "#0a0f1e", loginRightBg: "#f8fafc", contentBg: "#f1f5f9",
-    smsCredit: true, smsLowStock: true, smsDaily: false, smsSenderId: "BRANCHCTRL",
+    smsCredit: true, smsLowStock: true, smsDaily: false, smsDailyTime: "20:00", smsSenderId: "BRANCHCTRL",
   });
   const [supplierForm, setSupplierForm] = useState({ id: null as number | null, name: "", phone: "" });
   const [editingSupp, setEditingSupp] = useState<number | null>(null);
@@ -246,6 +246,7 @@ export default function Settings() {
         smsCredit: settings.smsCredit,
         smsLowStock: settings.smsLowStock,
         smsDaily: settings.smsDaily,
+        smsDailyTime: settings.smsDailyTime || "20:00",
         smsSenderId: settings.smsSenderId,
       });
       applyAllColors({
@@ -404,7 +405,7 @@ export default function Settings() {
   const smsToggles = [
     { key: "smsCredit" as const, label: "Credit sale notifications", desc: "SMS owner when credit sale is recorded" },
     { key: "smsLowStock" as const, label: "Low stock alerts", desc: "Alert when any item drops below 5 units" },
-    { key: "smsDaily" as const, label: "Daily report summary", desc: "Send SMS summary at 8pm daily" },
+    { key: "smsDaily" as const, label: "Daily report summary", desc: "Send a daily SMS summary at your chosen time" },
   ];
 
   const SETTINGS_GROUPS = [
@@ -529,17 +530,34 @@ export default function Settings() {
             {page === "sms" && (
               <div className="px-6 pb-6 pt-6 space-y-3">
                 {smsToggles.map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
-                    <div>
-                      <p className="font-bold text-foreground text-sm">{label}</p>
-                      <p className="text-xs text-muted-foreground">{desc}</p>
+                  <div key={key}>
+                    <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
+                      <div>
+                        <p className="font-bold text-foreground text-sm">{label}</p>
+                        <p className="text-xs text-muted-foreground">{desc}</p>
+                      </div>
+                      <button
+                        onClick={() => setProfile(f => ({ ...f, [key]: !f[key] }))}
+                        className={`relative h-6 w-11 rounded-full transition-all ${profile[key] ? "bg-primary" : "bg-muted-foreground/30"}`}
+                      >
+                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${profile[key] ? "left-5.5" : "left-0.5"}`} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setProfile(f => ({ ...f, [key]: !f[key] }))}
-                      className={`relative h-6 w-11 rounded-full transition-all ${profile[key] ? "bg-primary" : "bg-muted-foreground/30"}`}
-                    >
-                      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${profile[key] ? "left-5.5" : "left-0.5"}`} />
-                    </button>
+
+                    {key === "smsDaily" && profile.smsDaily && (
+                      <div className="mt-2 ml-4 mr-4 rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-bold text-foreground text-sm">Send time</p>
+                          <p className="text-xs text-muted-foreground">When the daily summary SMS goes out</p>
+                        </div>
+                        <input
+                          type="time"
+                          value={profile.smsDailyTime}
+                          onChange={e => setProfile(f => ({ ...f, smsDailyTime: e.target.value }))}
+                          className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-bold text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 tabular-nums"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
                 <div>

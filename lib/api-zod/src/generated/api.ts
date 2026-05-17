@@ -493,6 +493,7 @@ export const GetSettingsResponse = zod.object({
   "smsCredit": zod.boolean(),
   "smsLowStock": zod.boolean(),
   "smsDaily": zod.boolean(),
+  "smsDailyTime": zod.string(),
   "smsSenderId": zod.string()
 })
 
@@ -515,6 +516,7 @@ export const UpdateSettingsBody = zod.object({
   "smsCredit": zod.boolean().optional(),
   "smsLowStock": zod.boolean().optional(),
   "smsDaily": zod.boolean().optional(),
+  "smsDailyTime": zod.string().optional(),
   "smsSenderId": zod.string().optional()
 })
 
@@ -533,6 +535,7 @@ export const UpdateSettingsResponse = zod.object({
   "smsCredit": zod.boolean(),
   "smsLowStock": zod.boolean(),
   "smsDaily": zod.boolean(),
+  "smsDailyTime": zod.string(),
   "smsSenderId": zod.string()
 })
 
