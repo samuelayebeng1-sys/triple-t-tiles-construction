@@ -380,13 +380,17 @@ export default function HistoryPage() {
                     {open && (
                       <tr key={`${e.id}-items`} className="border-b border-border">
                         <td colSpan={7} className="p-0">
-                          <div className="px-4 py-2 bg-muted/20 border-t border-border/60 flex items-center gap-2">
+                          <div className="px-6 pt-5 pb-3 bg-muted/20 border-t border-border/60 flex items-center gap-2.5">
                             <span className={`h-2 w-2 rounded-full ${dot}`}/>
                             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                               Line Items — {e.branch} · {new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" })}
                             </span>
                           </div>
-                          <EntryItemsTable entryId={e.id} />
+                          <div className="px-4 pb-5">
+                            <div className="rounded-xl border border-border overflow-hidden">
+                              <EntryItemsTable entryId={e.id} />
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     )}
