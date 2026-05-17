@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { useListEntries, useGetEntryItems } from "@workspace/api-client-react";
 import { GHS, pct, BRANCHES } from "@/lib/format";
-import { exportPDF, exportExcel, previewPDF, type ExportEntry } from "@/lib/export";
+import { exportPDF, exportExcel, previewPDF, getExcelPreviewData, type ExportEntry } from "@/lib/export";
+import ExcelPreviewModal from "@/components/ExcelPreviewModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp, FileText, Table2, Loader2, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -218,8 +219,8 @@ export default function HistoryPage() {
   const [period, setPeriod]         = useState<Period>("This Month");
   const [branchFilter, setBranch]   = useState("All");
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [showPdfPreview, setShowPdfPreview] = useState(false);
-  const [exporting, setExporting]           = useState(false);
+  const [showPdfPreview, setShowPdfPreview]     = useState(false);
+  const [showExcelPreview, setShowExcelPreview] = useState(false);
 
   const filtered = useMemo(() => {
     const byPeriod = filterByPeriod(allEntries, period);
@@ -232,11 +233,8 @@ export default function HistoryPage() {
   const totalItems  = filtered.reduce((s,e) => s + e.itemsSold, 0);
   const margin      = pct(totalProfit, totalSales);
 
-  function handleExcel() {
-    if (filtered.length === 0) return;
-    setExporting(true);
-    setTimeout(() => { exportExcel(filtered, period, branchFilter); setExporting(false); }, 50);
-  }
+  const excelData     = showExcelPreview ? getExcelPreviewData(filtered, period, branchFilter) : null;
+  const excelFilename = `BranchControl_SalesHistory_${period.replace(/\s+/g, "_")}.xlsx`;
 
   return (
     <div className="p-6 space-y-5 max-w-5xl" data-testid="page-history">
@@ -249,6 +247,15 @@ export default function HistoryPage() {
           />
         )}
       </AnimatePresence>
+
+      {excelData && (
+        <ExcelPreviewModal
+          data={excelData}
+          filename={excelFilename}
+          onDownload={() => exportExcel(filtered, period, branchFilter)}
+          onClose={() => setShowExcelPreview(false)}
+        />
+      )}
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -268,11 +275,11 @@ export default function HistoryPage() {
             PDF
           </button>
           <button
-            onClick={handleExcel}
-            disabled={exporting || filtered.length === 0}
+            onClick={() => filtered.length > 0 && setShowExcelPreview(true)}
+            disabled={filtered.length === 0}
             className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all disabled:opacity-50"
           >
-            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin"/> : <Table2 className="h-3.5 w-3.5 text-emerald-500"/>}
+            <Table2 className="h-3.5 w-3.5 text-emerald-500"/>
             Excel
           </button>
         </div>
