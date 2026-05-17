@@ -1,11 +1,9 @@
 import { useMemo, useState } from "react";
 import { useListEntries, useGetEntryItems } from "@workspace/api-client-react";
 import { GHS, pct, BRANCHES } from "@/lib/format";
+import { exportPDF, exportExcel } from "@/lib/export";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ChevronDown, ChevronUp, FileText, Table2,
-  X, Download, CheckCircle2,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, Table2, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const PERIODS = ["Today", "This Week", "This Month", "All Time"] as const;
@@ -131,103 +129,13 @@ function EntryItemsTable({ entryId }: { entryId: number }) {
   );
 }
 
-/* ── Export Modal ─────────────────────────────────────── */
-function ExportModal({ type, entries, branchFilter, period, onClose }: {
-  type: "pdf" | "excel"; entries: any[]; branchFilter: string; period: string; onClose: () => void;
-}) {
-  const [done, setDone] = useState(false);
-  const company = localStorage.getItem("bc_company") || "BranchControl";
-  const today   = new Date().toLocaleDateString("en-GH", { dateStyle: "long" });
-  const total   = entries.reduce((s,e) => s + e.totalAmount, 0);
-  const profit  = entries.reduce((s,e) => s + e.totalProfit, 0);
-  const fname   = `BranchControl_History_${period.replace(/\s+/g,"_")}.${type === "pdf" ? "pdf" : "xlsx"}`;
-
-  return (
-    <AnimatePresence>
-      <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-        <motion.div initial={{opacity:0,y:36,scale:0.96}} animate={{opacity:1,y:0,scale:1}}
-          exit={{opacity:0,y:36,scale:0.96}} transition={{type:"spring",bounce:0.18}}
-          onClick={e=>e.stopPropagation()}
-          className="relative z-10 w-full max-w-2xl bg-card rounded-3xl border border-border shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <div className="flex items-center gap-3">
-              <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${type==="pdf"?"bg-red-100":"bg-emerald-100"}`}>
-                {type==="pdf" ? <FileText className="h-4 w-4 text-red-600"/> : <Table2 className="h-4 w-4 text-emerald-600"/>}
-              </div>
-              <div>
-                <p className="font-black text-sm text-foreground">{type==="pdf"?"PDF Preview":"Excel Preview"}</p>
-                <p className="text-xs text-muted-foreground">{fname}</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="rounded-xl bg-muted p-2 hover:bg-muted/70 transition-colors"><X className="h-4 w-4"/></button>
-          </div>
-          <AnimatePresence mode="wait">
-            {done ? (
-              <motion.div key="done" initial={{opacity:0,scale:0.85}} animate={{opacity:1,scale:1}} className="flex flex-col items-center py-14">
-                <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-600"/>
-                </div>
-                <p className="text-lg font-black text-foreground">Export Ready</p>
-                <p className="text-sm text-muted-foreground mt-1">{fname}</p>
-              </motion.div>
-            ) : (
-              <motion.div key="preview" className="p-4 space-y-4">
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden text-[10px]">
-                  <div className="bg-[#0f172a] px-5 py-3 flex justify-between">
-                    <div><p className="text-white font-black">{company}</p><p className="text-white/50 text-[9px]">Sales History · {period} · {branchFilter==="All"?"All Branches":branchFilter}</p></div>
-                    <div className="text-right"><p className="text-white/70 text-[9px]">{today}</p><p className="text-white/50 text-[9px]">{entries.length} entries</p></div>
-                  </div>
-                  <div className="overflow-auto max-h-52">
-                    <table className="w-full">
-                      <thead><tr className="bg-gray-50 border-b border-gray-100">
-                        {["Branch","Date","Total Sales","Profit","Margin","Items"].map(h=>(
-                          <th key={h} className="px-3 py-1.5 text-left text-[8px] font-black uppercase text-gray-400">{h}</th>
-                        ))}
-                      </tr></thead>
-                      <tbody>
-                        {entries.map((e,i)=>(
-                          <tr key={e.id} className={i%2===0?"bg-white":"bg-gray-50/50"}>
-                            <td className="px-3 py-1.5 font-bold">{e.branch}</td>
-                            <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{new Date(e.createdAt).toLocaleDateString("en-GH",{dateStyle:"short"})}</td>
-                            <td className="px-3 py-1.5 font-black">{GHS(e.totalAmount)}</td>
-                            <td className="px-3 py-1.5 text-[#059669]">{GHS(e.totalProfit)}</td>
-                            <td className="px-3 py-1.5 text-gray-500">{pct(e.totalProfit,e.totalAmount)}%</td>
-                            <td className="px-3 py-1.5 text-gray-500">{e.itemsSold}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot><tr className="bg-gray-100 border-t-2 border-gray-200 font-black text-[10px]">
-                        <td className="px-3 py-1.5 text-gray-700" colSpan={2}>TOTAL ({entries.length})</td>
-                        <td className="px-3 py-1.5">{GHS(total)}</td>
-                        <td className="px-3 py-1.5 text-[#059669]">{GHS(profit)}</td>
-                        <td className="px-3 py-1.5 text-gray-500">{pct(profit,total)}%</td>
-                        <td className="px-3 py-1.5 text-gray-500">{entries.reduce((s,e)=>s+e.itemsSold,0)}</td>
-                      </tr></tfoot>
-                    </table>
-                  </div>
-                </div>
-                <button onClick={()=>{setDone(true);setTimeout(onClose,2200);}}
-                  className={`w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black text-white hover:opacity-90 transition-all ${type==="pdf"?"bg-red-600":"bg-[#1d6f42]"}`}>
-                  <Download className="h-4 w-4"/> Download {type==="pdf"?"PDF":"Excel"}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
 /* ── Page ─────────────────────────────────────────────── */
 export default function HistoryPage() {
   const { data: allEntries = [], isLoading } = useListEntries();
   const [period, setPeriod]         = useState<Period>("This Month");
   const [branchFilter, setBranch]   = useState("All");
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [exportModal, setExportModal] = useState<"pdf"|"excel"|null>(null);
+  const [exporting, setExporting]   = useState<"pdf"|"excel"|null>(null);
 
   const filtered = useMemo(() => {
     const byPeriod = filterByPeriod(allEntries, period);
@@ -240,16 +148,21 @@ export default function HistoryPage() {
   const totalItems  = filtered.reduce((s,e) => s + e.itemsSold, 0);
   const margin      = pct(totalProfit, totalSales);
 
+  function handleExport(type: "pdf" | "excel") {
+    if (filtered.length === 0) return;
+    setExporting(type);
+    setTimeout(() => {
+      try {
+        if (type === "pdf") exportPDF(filtered, period, branchFilter);
+        else exportExcel(filtered, period, branchFilter);
+      } finally {
+        setExporting(null);
+      }
+    }, 50);
+  }
+
   return (
     <div className="p-6 space-y-5 max-w-5xl" data-testid="page-history">
-
-      {exportModal && (
-        <ExportModal
-          type={exportModal} entries={filtered}
-          branchFilter={branchFilter} period={period}
-          onClose={() => setExportModal(null)}
-        />
-      )}
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -260,13 +173,25 @@ export default function HistoryPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setExportModal("pdf")}
-            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all">
-            <FileText className="h-3.5 w-3.5 text-red-500"/> PDF
+          <button
+            onClick={() => handleExport("pdf")}
+            disabled={exporting !== null || filtered.length === 0}
+            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all disabled:opacity-50"
+          >
+            {exporting === "pdf"
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin"/>
+              : <FileText className="h-3.5 w-3.5 text-red-500"/>}
+            PDF
           </button>
-          <button onClick={() => setExportModal("excel")}
-            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all">
-            <Table2 className="h-3.5 w-3.5 text-emerald-500"/> Excel
+          <button
+            onClick={() => handleExport("excel")}
+            disabled={exporting !== null || filtered.length === 0}
+            className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all disabled:opacity-50"
+          >
+            {exporting === "excel"
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin"/>
+              : <Table2 className="h-3.5 w-3.5 text-emerald-500"/>}
+            Excel
           </button>
         </div>
       </div>
