@@ -407,15 +407,37 @@ export default function Settings() {
     { key: "smsDaily" as const, label: "Daily report summary", desc: "Send SMS summary at 8pm daily" },
   ];
 
-  const NAV_TILES = [
-    { id: "colours" as Page,       icon: Palette,       title: "Interface Customisation", desc: "Colours for login, sidebar, accent and pages",          count: null },
-    { id: "business" as Page,      icon: Building2,     title: "Business Profile",        desc: "Company name, logo, contact details",                   count: null },
-    { id: "sms" as Page,           icon: MessageSquare, title: "SMS & Notifications",     desc: "Alerts, sender ID and notification toggles",            count: null },
-    { id: "locations" as Page,     icon: MapPin,        title: "Branches & Warehouses",   desc: "Manage your sales branches and storage locations",       count: locations?.length ?? null },
-    { id: "suppliers" as Page,     icon: Truck,         title: "Suppliers",               desc: "Add, edit and remove your suppliers",                   count: suppliers?.length ?? null },
-    { id: "products" as Page,      icon: Package,       title: "Products",                desc: "Your product catalogue with pricing",                   count: products?.length ?? null },
-    { id: "initialStock" as Page,  icon: Layers,        title: "Initial Stock Setup",     desc: "Set opening stock quantities before going live",        count: null },
+  const SETTINGS_GROUPS = [
+    {
+      label: "Your Business",
+      items: [
+        { id: "business" as Page,  icon: Building2,     title: "Business Profile",        desc: "Company name, logo and contact details",                 count: null,                    accent: "#3b82f6" },
+        { id: "locations" as Page, icon: MapPin,        title: "Branches & Warehouses",   desc: "Manage your sales branches and storage locations",       count: locations?.length ?? null, accent: "#10b981" },
+      ],
+    },
+    {
+      label: "Catalogue & Stock",
+      items: [
+        { id: "products" as Page,     icon: Package, title: "Products",            desc: "Your product catalogue with pricing",             count: products?.length ?? null, accent: "#f59e0b" },
+        { id: "suppliers" as Page,    icon: Truck,   title: "Suppliers",           desc: "Add, edit and remove your suppliers",             count: suppliers?.length ?? null, accent: "#8b5cf6" },
+        { id: "initialStock" as Page, icon: Layers,  title: "Initial Stock Setup", desc: "Set opening stock quantities before going live",  count: null,                    accent: "#06b6d4" },
+      ],
+    },
+    {
+      label: "Notifications",
+      items: [
+        { id: "sms" as Page, icon: MessageSquare, title: "SMS & Notifications", desc: "Alerts, sender ID and notification toggles", count: null, accent: "#f43f5e" },
+      ],
+    },
+    {
+      label: "Appearance",
+      items: [
+        { id: "colours" as Page, icon: Palette, title: "Interface Customisation", desc: "Colours for login screen, sidebar, accent and pages", count: null, accent: "#64748b" },
+      ],
+    },
   ];
+
+  const NAV_TILES = SETTINGS_GROUPS.flatMap(g => g.items);
 
   const currentTile = NAV_TILES.find(t => t.id === page);
 
@@ -785,33 +807,43 @@ export default function Settings() {
         </>
       ) : (
         <>
-          {/* ── Main settings grid view ── */}
-          <div className="mb-6">
+          {/* ── Main settings list ── */}
+          <div className="mb-8">
             <h1 className="text-2xl font-black text-foreground">Settings</h1>
-            <p className="text-sm text-muted-foreground">Configure your business, interface, products, and locations</p>
+            <p className="text-sm text-muted-foreground">Manage your business, products, notifications and appearance</p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {NAV_TILES.map(({ id, icon: Icon, title, desc, count }) => (
-              <button
-                key={id}
-                onClick={() => setPage(id)}
-                className="rounded-2xl border border-border bg-card shadow-sm p-5 text-left flex items-center gap-4 hover:border-primary/40 hover:shadow-md transition-all group"
-              >
-                <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "hsl(var(--primary) / 0.08)" }}>
-                  <Icon className="h-5 w-5" style={{ color: "hsl(var(--primary))" }} />
+          <div className="max-w-2xl space-y-8">
+            {SETTINGS_GROUPS.map(group => (
+              <div key={group.label}>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 px-1">{group.label}</p>
+                <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+                  {group.items.map(({ id, icon: Icon, title, desc, count, accent }, idx) => (
+                    <button
+                      key={id}
+                      onClick={() => setPage(id)}
+                      className={`w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/40 active:bg-muted/60 transition-colors group ${idx < group.items.length - 1 ? "border-b border-border/60" : ""}`}
+                    >
+                      <div
+                        className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: accent + "18" }}
+                      >
+                        <Icon className="h-4.5 w-4.5" style={{ color: accent }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-foreground text-sm">{title}</p>
+                          {count !== null && (
+                            <span className="text-[10px] font-black rounded-full px-2 py-0.5 bg-muted text-muted-foreground tabular-nums">{count}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                    </button>
+                  ))}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-black text-foreground text-sm">{title}</p>
-                    {count !== null && (
-                      <span className="text-[10px] font-black rounded-full px-2 py-0.5 bg-muted text-muted-foreground">{count}</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-              </button>
+              </div>
             ))}
           </div>
         </>
