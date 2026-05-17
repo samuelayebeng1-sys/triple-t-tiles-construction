@@ -83,9 +83,17 @@ function LiveClock() {
 export default function Entry() {
   const [selectedBranch, setSelectedBranch] = useState<string>(BRANCHES[0]);
   const [confirmed, setConfirmed] = useState(false);
+  const [showUndoBar, setShowUndoBar] = useState(false);
+  const undoBarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
   const initialized = useRef(false);
+
+  const flashUndoBar = useCallback(() => {
+    setShowUndoBar(true);
+    if (undoBarTimer.current) clearTimeout(undoBarTimer.current);
+    undoBarTimer.current = setTimeout(() => setShowUndoBar(false), 7000);
+  }, []);
 
   const { data: products, isLoading: prodLoading } = useListProducts();
   const { data: stock } = useGetStock({ query: { queryKey: getGetStockQueryKey() } });
@@ -117,8 +125,8 @@ export default function Entry() {
       // Don't intercept when the user is actively typing in a field
       const tag = (document.activeElement?.tagName ?? "").toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select") return;
-      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
-      if ((e.key === "y") || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); handleUndo(); }
+      if ((e.key === "y") || (e.key === "z" && e.shiftKey)) { e.preventDefault(); handleRedo(); }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -126,7 +134,11 @@ export default function Entry() {
 
   function update(i: number, k: keyof EntryRow, v: string) {
     setRows(rs => rs.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
+    flashUndoBar();
   }
+
+  function handleUndo() { undo(); flashUndoBar(); }
+  function handleRedo() { redo(); flashUndoBar(); }
 
   function getStockQty(code: string): number {
     return stock?.find(s => s.location === selectedBranch && s.productCode === code)?.quantity ?? 0;
@@ -219,10 +231,10 @@ export default function Entry() {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Undo / Redo buttons */}
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-sm">
+          {/* Undo / Redo buttons — visible for 7s after a change */}
+          <div className={`flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-sm transition-all duration-500 ${showUndoBar ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none"}`}>
             <button
-              onClick={undo}
+              onClick={handleUndo}
               disabled={!canUndo}
               title="Undo (Ctrl+Z)"
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted enabled:active:scale-95"
@@ -232,7 +244,7 @@ export default function Entry() {
             </button>
             <div className="h-4 w-px bg-border" />
             <button
-              onClick={redo}
+              onClick={handleRedo}
               disabled={!canRedo}
               title="Redo (Ctrl+Y)"
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted enabled:active:scale-95"
