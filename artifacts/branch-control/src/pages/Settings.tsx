@@ -649,8 +649,7 @@ export default function Settings() {
                         const res = await fetch(`${import.meta.env.BASE_URL}api/settings/sms/test`, { method: "POST" });
                         const data = await res.json().catch(() => ({}));
                         if (res.ok && data.ok) {
-                          const note = data.usedDefaultSender ? " (sent from default shortcode — your Sender ID isn't approved by Africa's Talking yet)" : "";
-                          toast({ title: "Test SMS sent", description: `Delivered to ${data.sent} of ${data.attempted} number(s). Check your phone.${note}` });
+                          toast({ title: "Test SMS sent", description: `Delivered to ${data.sent} of ${data.attempted} number(s). Check your phone.` });
                         } else {
                           toast({ title: "Test SMS failed", description: data.error || `HTTP ${res.status}`, variant: "destructive" });
                         }
