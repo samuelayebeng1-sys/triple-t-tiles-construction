@@ -219,7 +219,7 @@ export default function Settings() {
     companyName: "", phone: "", email: "", logoUrl: "",
     accentColor: "#0f172a", loginGlowColor: "#7c3aed", contentBarColor: "#0f172a",
     sidebarColor: "#0f172a", loginPanelBg: "#0a0f1e", loginRightBg: "#f8fafc", contentBg: "#f1f5f9",
-    smsCredit: true, smsLowStock: true, smsDaily: false, smsDailyTime: "20:00", smsSenderId: "BRANCHCTRL",
+    smsCredit: true, smsLowStock: true, smsDaily: false, smsDailyTime: "20:00", smsRecipients: [] as string[], smsSenderId: "BRANCHCTRL",
   });
   const [supplierForm, setSupplierForm] = useState({ id: null as number | null, name: "", phone: "" });
   const [editingSupp, setEditingSupp] = useState<number | null>(null);
@@ -247,6 +247,7 @@ export default function Settings() {
         smsLowStock: settings.smsLowStock,
         smsDaily: settings.smsDaily,
         smsDailyTime: settings.smsDailyTime || "20:00",
+        smsRecipients: settings.smsRecipients ?? [],
         smsSenderId: settings.smsSenderId,
       });
       applyAllColors({
@@ -560,10 +561,78 @@ export default function Settings() {
                     )}
                   </div>
                 ))}
+                <div className="rounded-xl bg-muted/40 p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className={labelClass + " mb-0"}>Recipient Numbers</label>
+                    <span className="text-[10px] font-black text-muted-foreground tabular-nums">{profile.smsRecipients.length} added</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Numbers that will receive SMS alerts. Include country code (e.g. <span className="font-semibold">+233244000000</span>).
+                    The owner number from Business Profile is included automatically.
+                  </p>
+
+                  {/* Chips */}
+                  {profile.smsRecipients.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {profile.smsRecipients.map((num, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary pl-3 pr-1 py-1 text-xs font-black tabular-nums"
+                        >
+                          {num}
+                          <button
+                            type="button"
+                            onClick={() => setProfile(f => ({ ...f, smsRecipients: f.smsRecipients.filter((_, i) => i !== idx) }))}
+                            className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center transition-colors"
+                            aria-label={`Remove ${num}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add input */}
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      placeholder="+233244000000"
+                      className={inputClass + " flex-1"}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = (e.target as HTMLInputElement).value.trim();
+                          if (val && !profile.smsRecipients.includes(val)) {
+                            setProfile(f => ({ ...f, smsRecipients: [...f.smsRecipients, val] }));
+                            (e.target as HTMLInputElement).value = "";
+                          }
+                        }
+                      }}
+                      id="sms-recipient-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById("sms-recipient-input") as HTMLInputElement | null;
+                        if (!el) return;
+                        const val = el.value.trim();
+                        if (val && !profile.smsRecipients.includes(val)) {
+                          setProfile(f => ({ ...f, smsRecipients: [...f.smsRecipients, val] }));
+                          el.value = "";
+                        }
+                      }}
+                      className="rounded-xl bg-primary text-primary-foreground px-4 text-sm font-black hover:opacity-90 transition-opacity"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <label className={labelClass}>SMS Sender ID</label>
                   <input value={profile.smsSenderId} onChange={e => setProfile(f => ({ ...f, smsSenderId: e.target.value.toUpperCase().slice(0, 11) }))} className={inputClass} placeholder="BRANCHCTRL" maxLength={11} />
-                  <p className="text-xs text-muted-foreground mt-1">Max 11 characters, letters and numbers only.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Max 11 characters, letters and numbers only. Must be pre-registered with Africa's Talking.</p>
                 </div>
                 <button onClick={handleSaveProfile} disabled={updateSettings.isPending}
                   className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">

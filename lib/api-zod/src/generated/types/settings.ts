@@ -22,5 +22,6 @@ export interface Settings {
   smsLowStock: boolean;
   smsDaily: boolean;
   smsDailyTime: string;
+  smsRecipients: string[];
   smsSenderId: string;
 }

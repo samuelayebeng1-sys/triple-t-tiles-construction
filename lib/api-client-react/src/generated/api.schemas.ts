@@ -237,6 +237,7 @@ export interface Settings {
   smsLowStock: boolean;
   smsDaily: boolean;
   smsDailyTime: string;
+  smsRecipients: string[];
   smsSenderId: string;
 }
 
@@ -256,6 +257,7 @@ export interface SettingsInput {
   smsLowStock?: boolean;
   smsDaily?: boolean;
   smsDailyTime?: string;
+  smsRecipients?: string[];
   smsSenderId?: string;
 }
 

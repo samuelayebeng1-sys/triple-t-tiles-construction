@@ -19,6 +19,7 @@ export const settingsTable = pgTable("settings", {
   smsLowStock: boolean("sms_low_stock").notNull().default(true),
   smsDaily: boolean("sms_daily").notNull().default(false),
   smsDailyTime: text("sms_daily_time").notNull().default("20:00"),
+  smsRecipients: text("sms_recipients").array().notNull().default([]),
   smsSenderId: text("sms_sender_id").notNull().default("BRANCHCTRL"),
 });
 
