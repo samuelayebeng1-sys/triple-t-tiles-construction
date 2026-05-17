@@ -46,17 +46,14 @@ export function formatPeriodLabel(period: string): string {
     const start = new Date(now);
     start.setDate(now.getDate() - now.getDay());
     start.setHours(0, 0, 0, 0);
-    const sameMonth = start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear();
-    if (sameMonth) {
-      return (
-        fmt(start, { day: "numeric" }) + " – " +
-        fmt(now, { day: "numeric", month: "long", year: "numeric" })
-      );
-    }
-    return (
-      fmt(start, { day: "numeric", month: "short" }) + " – " +
-      fmt(now, { day: "numeric", month: "long", year: "numeric" })
-    );
+    const weekOfMonth = Math.ceil(now.getDate() / 7);
+    const ordinals = ["", "1st", "2nd", "3rd", "4th", "5th"];
+    const ordinal = ordinals[weekOfMonth] ?? weekOfMonth + "th";
+    const monthYear = fmt(now, { month: "long", year: "numeric" });
+    const startDay = fmt(start, { day: "numeric" });
+    const endDay   = fmt(now,   { day: "numeric" });
+    const mon      = fmt(now,   { month: "short" });
+    return ordinal + " Week of " + monthYear + " \u00B7 " + startDay + "\u2013" + endDay + " " + mon;
   }
   if (period === "This Month") {
     return fmt(now, { month: "long", year: "numeric" });
@@ -176,7 +173,7 @@ function buildHistoryPDF(entries: ExportEntry[], period: string, branchFilter: s
     { label: "ITEMS SOLD",   value: String(totalItems) },
   ]);
 
-  const mainTable = autoTable(doc, {
+  autoTable(doc, {
     startY: 45,
     head: [["#", "Branch", "Date", "Time", "Total Sales", "Cash", "MoMo", "Bank", "Credit", "Profit", "Margin", "Items", "Status"]],
     body: entries.map((e, i) => [
@@ -216,7 +213,7 @@ function buildHistoryPDF(entries: ExportEntry[], period: string, branchFilter: s
   const entriesWithItems = entries.filter(e => e.items && e.items.length > 0);
   if (entriesWithItems.length > 0) {
     const pageW = doc.internal.pageSize.getWidth();
-    let currentY = (mainTable as any).finalY + 10;
+    let currentY = (doc as any).lastAutoTable.finalY + 10;
 
     /* Section divider */
     doc.setFillColor(15, 23, 42);
@@ -245,7 +242,7 @@ function buildHistoryPDF(entries: ExportEntry[], period: string, branchFilter: s
       doc.line(10, currentY + 1, pageW - 10, currentY + 1);
       currentY += 4;
 
-      const itemTable = autoTable(doc, {
+      autoTable(doc, {
         startY: currentY,
         head: [["Code", "Product", "Price/Unit", "Qty", "Amount", "Payment", "Customer", "Phone"]],
         body: items.map(it => [
@@ -276,7 +273,7 @@ function buildHistoryPDF(entries: ExportEntry[], period: string, branchFilter: s
         margin: { left: 10, right: 10 },
       });
 
-      currentY = (itemTable as any).finalY + 6;
+      currentY = (doc as any).lastAutoTable.finalY + 6;
     }
   }
 

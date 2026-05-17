@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp, FileText, Table2, Loader2, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const PERIODS = ["Today", "This Week", "This Month", "All Time"] as const;
+const PERIODS = ["Today", "This Week", "This Month", "This Year", "All Time"] as const;
 type Period = typeof PERIODS[number];
 const BRANCH_FILTERS = ["All", ...BRANCHES] as const;
 
@@ -35,6 +35,7 @@ function filterByPeriod(entries: any[], period: Period) {
       return d >= start;
     }
     if (period === "This Month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (period === "This Year")  return d.getFullYear() === now.getFullYear();
     return true;
   });
 }
