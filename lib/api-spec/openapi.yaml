@@ -993,7 +993,7 @@ components:
 
     Settings:
       type: object
-      required: [companyName, phone, email, logoUrl, accentColor, loginGlowColor, contentBarColor, sidebarColor, loginPanelBg, loginRightBg, contentBg, smsCredit, smsLowStock, smsDaily, smsDailyTime, smsRecipients, smsSenderId, emailEnabled, emailThreshold, emailRecipients]
+      required: [companyName, phone, email, logoUrl, accentColor, loginGlowColor, contentBarColor, sidebarColor, loginPanelBg, loginRightBg, contentBg, smsCredit, smsLowStock, smsDaily, smsDailyTime, smsRecipients, smsSenderId]
       properties:
         companyName:
           type: string
@@ -1031,14 +1031,6 @@ components:
             type: string
         smsSenderId:
           type: string
-        emailEnabled:
-          type: boolean
-        emailThreshold:
-          type: integer
-        emailRecipients:
-          type: array
-          items:
-            type: string
 
     SettingsInput:
       type: object
@@ -1079,14 +1071,6 @@ components:
             type: string
         smsSenderId:
           type: string
-        emailEnabled:
-          type: boolean
-        emailThreshold:
-          type: integer
-        emailRecipients:
-          type: array
-          items:
-            type: string
 
     Supplier:
       type: object

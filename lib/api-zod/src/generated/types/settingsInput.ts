@@ -24,7 +24,4 @@ export interface SettingsInput {
   smsDailyTime?: string;
   smsRecipients?: string[];
   smsSenderId?: string;
-  emailEnabled?: boolean;
-  emailThreshold?: number;
-  emailRecipients?: string[];
 }

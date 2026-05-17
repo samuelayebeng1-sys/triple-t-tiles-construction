@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save, Plus, Pencil, Trash2, X, ChevronRight, ArrowLeft,
-  Building2, Truck, Package, MessageSquare, Palette, Upload, MapPin, Layers, Mail,
+  Building2, Truck, Package, MessageSquare, Palette, Upload, MapPin, Layers,
 } from "lucide-react";
 import { applyAllColors, applyAccentColor, applyLoginGlowColor, applyContentBarColor, applySidebarColor, applyLoginPanelBg, applyLoginRightBg, applyContentBg } from "@/lib/theme";
 
@@ -220,7 +220,6 @@ export default function Settings() {
     accentColor: "#0f172a", loginGlowColor: "#7c3aed", contentBarColor: "#0f172a",
     sidebarColor: "#0f172a", loginPanelBg: "#0a0f1e", loginRightBg: "#f8fafc", contentBg: "#f1f5f9",
     smsCredit: true, smsLowStock: true, smsDaily: false, smsDailyTime: "20:00", smsRecipients: [] as string[], smsSenderId: "BRANCHCTRL",
-    emailEnabled: false, emailThreshold: 0, emailRecipients: [] as string[],
   });
   const [supplierForm, setSupplierForm] = useState({ id: null as number | null, name: "", phone: "" });
   const [editingSupp, setEditingSupp] = useState<number | null>(null);
@@ -251,9 +250,6 @@ export default function Settings() {
         smsDailyTime: settings.smsDailyTime || "20:00",
         smsRecipients: settings.smsRecipients ?? [],
         smsSenderId: settings.smsSenderId,
-        emailEnabled: settings.emailEnabled ?? false,
-        emailThreshold: settings.emailThreshold ?? 0,
-        emailRecipients: settings.emailRecipients ?? [],
       });
       applyAllColors({
         accentColor: settings.accentColor,
@@ -522,14 +518,10 @@ export default function Settings() {
                       <label className={labelClass}>Business Phone (primary)</label>
                       <input data-testid="input-business-phone" value={profile.phone} onChange={e => setProfile(f => ({ ...f, phone: e.target.value }))} className={inputClass} placeholder="+233244000000" />
                     </div>
-                    <div>
-                      <label className={labelClass}>Business Email (primary)</label>
-                      <input data-testid="input-business-email" type="email" value={profile.email} onChange={e => setProfile(f => ({ ...f, email: e.target.value }))} className={inputClass} placeholder="owner@company.com" />
-                    </div>
                     <div className="md:col-span-2">
                       <div className="flex items-center justify-between mb-1">
-                        <label className={labelClass + " mb-0"}>Additional Numbers (maximum 4)</label>
-                        <span className="text-[10px] font-black text-muted-foreground tabular-nums">{profile.smsRecipients.length}/4</span>
+                        <label className={labelClass + " mb-0"}>Additional Numbers</label>
+                        <span className="text-[10px] font-black text-muted-foreground tabular-nums">{profile.smsRecipients.length} added</span>
                       </div>
                       <p className="text-xs text-muted-foreground mb-3">
                         Extra numbers that will also receive SMS alerts. Include country code (e.g. <span className="font-semibold">+233244000000</span>). The primary number above is included automatically.
@@ -562,12 +554,11 @@ export default function Settings() {
                           placeholder="+233244000000"
                           className={inputClass + " flex-1"}
                           id="sms-recipient-input"
-                          disabled={profile.smsRecipients.length >= 4}
                           onKeyDown={e => {
                             if (e.key === "Enter") {
                               e.preventDefault();
                               const val = (e.target as HTMLInputElement).value.trim();
-                              if (val && !profile.smsRecipients.includes(val) && profile.smsRecipients.length < 4) {
+                              if (val && !profile.smsRecipients.includes(val)) {
                                 setProfile(f => ({ ...f, smsRecipients: [...f.smsRecipients, val] }));
                                 (e.target as HTMLInputElement).value = "";
                               }
@@ -576,17 +567,16 @@ export default function Settings() {
                         />
                         <button
                           type="button"
-                          disabled={profile.smsRecipients.length >= 4}
                           onClick={() => {
                             const el = document.getElementById("sms-recipient-input") as HTMLInputElement | null;
                             if (!el) return;
                             const val = el.value.trim();
-                            if (val && !profile.smsRecipients.includes(val) && profile.smsRecipients.length < 4) {
+                            if (val && !profile.smsRecipients.includes(val)) {
                               setProfile(f => ({ ...f, smsRecipients: [...f.smsRecipients, val] }));
                               el.value = "";
                             }
                           }}
-                          className="rounded-xl bg-primary text-primary-foreground px-4 text-sm font-black hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="rounded-xl bg-primary text-primary-foreground px-4 text-sm font-black hover:opacity-90 transition-opacity"
                         >
                           Add
                         </button>
@@ -604,118 +594,7 @@ export default function Settings() {
             )}
 
             {page === "sms" && (
-              <div className="px-6 pb-6 pt-6 space-y-6">
-                {/* Email Notifications */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Email Notifications</h3>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
-                    <div>
-                      <p className="font-bold text-foreground text-sm">Enable Notification</p>
-                      <p className="text-xs text-muted-foreground">Send email alerts for large sales and key events</p>
-                    </div>
-                    <button
-                      onClick={() => setProfile(f => ({ ...f, emailEnabled: !f.emailEnabled }))}
-                      className={`relative h-6 w-11 rounded-full transition-all ${profile.emailEnabled ? "bg-primary" : "bg-muted-foreground/30"}`}
-                    >
-                      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${profile.emailEnabled ? "left-5.5" : "left-0.5"}`} />
-                    </button>
-                  </div>
-
-                  {profile.emailEnabled && (
-                    <>
-                      <div>
-                        <label className={labelClass}>Threshold (in GHS)</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={profile.emailThreshold || ""}
-                          onChange={e => setProfile(f => ({ ...f, emailThreshold: Number(e.target.value) || 0 }))}
-                          className={inputClass}
-                          placeholder="e.g. 5000"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">Notify when a single sale or daily total exceeds this amount.</p>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className={labelClass + " mb-0"}>Additional Recipients (maximum 4)</label>
-                          <span className="text-[10px] font-black text-muted-foreground tabular-nums">{profile.emailRecipients.length}/4</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Default Recipient: <span className="font-bold text-foreground">{profile.email || "—  set in Business Profile"}</span>
-                        </p>
-
-                        {profile.emailRecipients.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            {profile.emailRecipients.map((addr, idx) => (
-                              <span key={idx} className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary pl-3 pr-1 py-1 text-xs font-black">
-                                {addr}
-                                <button
-                                  type="button"
-                                  onClick={() => setProfile(f => ({ ...f, emailRecipients: f.emailRecipients.filter((_, i) => i !== idx) }))}
-                                  className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center transition-colors"
-                                  aria-label={`Remove ${addr}`}
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          <input
-                            type="email"
-                            placeholder="name@example.com"
-                            className={inputClass + " flex-1"}
-                            id="email-recipient-input"
-                            disabled={profile.emailRecipients.length >= 4}
-                            onKeyDown={e => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                const val = (e.target as HTMLInputElement).value.trim();
-                                if (val && !profile.emailRecipients.includes(val) && profile.emailRecipients.length < 4) {
-                                  setProfile(f => ({ ...f, emailRecipients: [...f.emailRecipients, val] }));
-                                  (e.target as HTMLInputElement).value = "";
-                                }
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            disabled={profile.emailRecipients.length >= 4}
-                            onClick={() => {
-                              const el = document.getElementById("email-recipient-input") as HTMLInputElement | null;
-                              if (!el) return;
-                              const val = el.value.trim();
-                              if (val && !profile.emailRecipients.includes(val) && profile.emailRecipients.length < 4) {
-                                setProfile(f => ({ ...f, emailRecipients: [...f.emailRecipients, val] }));
-                                el.value = "";
-                              }
-                            }}
-                            className="rounded-xl bg-primary text-primary-foreground px-4 text-sm font-black hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="border-t border-border" />
-
-                {/* SMS Notifications */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">SMS Notification</h3>
-                  </div>
-
+              <div className="px-6 pb-6 pt-6 space-y-3">
                 {smsToggles.map(({ key, label, desc }) => (
                   <div key={key}>
                     <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
@@ -788,7 +667,6 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground">
                   Sends a test message to your primary phone and all additional numbers. Save any changes first.
                 </p>
-                </div>
               </div>
             )}
 

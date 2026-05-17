@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -21,9 +21,6 @@ export const settingsTable = pgTable("settings", {
   smsDailyTime: text("sms_daily_time").notNull().default("20:00"),
   smsRecipients: text("sms_recipients").array().notNull().default([]),
   smsSenderId: text("sms_sender_id").notNull().default("BRANCHCTRL"),
-  emailEnabled: boolean("email_enabled").notNull().default(false),
-  emailThreshold: integer("email_threshold").notNull().default(0),
-  emailRecipients: text("email_recipients").array().notNull().default([]),
 });
 
 export const insertSettingsSchema = createInsertSchema(settingsTable).omit({ id: true });

@@ -239,9 +239,6 @@ export interface Settings {
   smsDailyTime: string;
   smsRecipients: string[];
   smsSenderId: string;
-  emailEnabled: boolean;
-  emailThreshold: number;
-  emailRecipients: string[];
 }
 
 export interface SettingsInput {
@@ -262,9 +259,6 @@ export interface SettingsInput {
   smsDailyTime?: string;
   smsRecipients?: string[];
   smsSenderId?: string;
-  emailEnabled?: boolean;
-  emailThreshold?: number;
-  emailRecipients?: string[];
 }
 
 export interface Supplier {
