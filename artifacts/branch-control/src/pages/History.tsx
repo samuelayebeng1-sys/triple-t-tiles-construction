@@ -305,119 +305,104 @@ export default function HistoryPage() {
       )}
 
       {/* Entry list */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="p-6 space-y-3">
-            {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl"/>)}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="font-bold text-muted-foreground">No entries for this period.</p>
-            <p className="text-sm text-muted-foreground/60 mt-1">Try a wider period or different branch.</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="px-4 py-3 w-8"/>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Branch</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Profit</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment Breakdown</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Items</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((e, i) => {
-                const dot  = BRANCH_DOT[e.branch] ?? "bg-muted-foreground";
-                const open = expandedId === e.id;
-                return (
-                  <>
-                    <tr
-                      key={e.id}
-                      onClick={() => setExpandedId(open ? null : e.id)}
-                      className={`border-b border-border/40 cursor-pointer transition-colors ${open ? "bg-muted/20" : i % 2 === 0 ? "hover:bg-muted/20" : "bg-muted/5 hover:bg-muted/20"}`}
-                    >
-                      <td className="px-4 py-3.5">
-                        {open
-                          ? <ChevronUp className="h-4 w-4 text-muted-foreground"/>
-                          : <ChevronDown className="h-4 w-4 text-muted-foreground/30"/>}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${dot}`}/>
-                          <span className="font-bold text-foreground">{e.branch}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <p className="font-bold text-foreground">
-                          {new Date(e.createdAt).toLocaleDateString("en-GH", { day: "numeric", month: "short", year: "numeric" })}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {new Date(e.createdAt).toLocaleTimeString("en-GH", { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3.5 font-black text-foreground whitespace-nowrap">
-                        {GHS(e.totalAmount)}
-                      </td>
-                      <td className="px-4 py-3.5 font-bold text-emerald-600 whitespace-nowrap">
-                        {GHS(e.totalProfit)}
-                        <span className="ml-1.5 text-[10px] font-bold text-muted-foreground">
-                          {pct(e.totalProfit, e.totalAmount)}%
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <PayBreakdown
-                          cash={e.totalCash} momo={e.totalMomo}
-                          bank={e.totalBank ?? 0} credit={e.totalCredit}
-                        />
-                      </td>
-                      <td className="px-4 py-3.5 text-muted-foreground">{e.itemsSold}</td>
-                    </tr>
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-20 w-full rounded-2xl"/>)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-card py-16 text-center">
+          <p className="font-bold text-muted-foreground">No entries for this period.</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">Try a wider period or different branch.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((e) => {
+            const dot  = BRANCH_DOT[e.branch] ?? "bg-muted-foreground";
+            const open = expandedId === e.id;
+            return (
+              <div key={e.id} className={`rounded-2xl border bg-card shadow-sm overflow-hidden transition-all ${open ? "border-primary/30" : "border-border"}`}>
 
-                    {/* Expanded line items */}
-                    {open && (
-                      <tr key={`${e.id}-items`} className="border-b border-border">
-                        <td colSpan={7} className="p-0">
-                          <div className="px-6 pt-5 pb-3 bg-muted/20 border-t border-border/60 flex items-center gap-2.5">
-                            <span className={`h-2 w-2 rounded-full ${dot}`}/>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                              Line Items — {e.branch} · {new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" })}
-                            </span>
-                          </div>
-                          <div className="px-4 pb-5">
-                            <div className="rounded-xl border border-border overflow-hidden">
-                              <EntryItemsTable entryId={e.id} />
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-border bg-muted/20">
-                <td className="px-4 py-3" colSpan={2}>
-                  <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-                    {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
-                  </span>
-                </td>
-                <td className="px-4 py-3"/>
-                <td className="px-4 py-3 font-black text-foreground whitespace-nowrap">{GHS(totalSales)}</td>
-                <td className="px-4 py-3 font-black text-emerald-600 whitespace-nowrap">
-                  {GHS(totalProfit)}
-                  <span className="ml-1.5 text-[10px] font-bold text-muted-foreground">{margin}%</span>
-                </td>
-                <td className="px-4 py-3"/>
-                <td className="px-4 py-3 text-muted-foreground font-bold">{totalItems}</td>
-              </tr>
-            </tfoot>
-          </table>
-        )}
-      </div>
+                {/* Summary row — click to toggle */}
+                <button
+                  onClick={() => setExpandedId(open ? null : e.id)}
+                  className="w-full text-left px-5 py-4 flex items-center gap-4 hover:bg-muted/20 transition-colors"
+                >
+                  {/* Branch dot + name */}
+                  <div className="flex items-center gap-2 w-28 shrink-0">
+                    <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${dot}`}/>
+                    <span className="font-black text-foreground">{e.branch}</span>
+                  </div>
+
+                  {/* Date */}
+                  <div className="w-32 shrink-0">
+                    <p className="text-sm font-bold text-foreground">
+                      {new Date(e.createdAt).toLocaleDateString("en-GH", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(e.createdAt).toLocaleTimeString("en-GH", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+
+                  {/* Total */}
+                  <div className="w-28 shrink-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total</p>
+                    <p className="text-sm font-black text-foreground">{GHS(e.totalAmount)}</p>
+                  </div>
+
+                  {/* Profit */}
+                  <div className="w-28 shrink-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Profit</p>
+                    <p className="text-sm font-bold text-emerald-600">
+                      {GHS(e.totalProfit)}
+                      <span className="ml-1 text-[10px] text-muted-foreground">{pct(e.totalProfit, e.totalAmount)}%</span>
+                    </p>
+                  </div>
+
+                  {/* Payment pills — grows to fill space */}
+                  <div className="flex-1 min-w-0">
+                    <PayBreakdown
+                      cash={e.totalCash} momo={e.totalMomo}
+                      bank={e.totalBank ?? 0} credit={e.totalCredit}
+                    />
+                  </div>
+
+                  {/* Items + chevron */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-muted-foreground">{e.itemsSold} items</span>
+                    {open
+                      ? <ChevronUp className="h-4 w-4 text-muted-foreground"/>
+                      : <ChevronDown className="h-4 w-4 text-muted-foreground/40"/>}
+                  </div>
+                </button>
+
+                {/* Expanded line items */}
+                <AnimatePresence initial={false}>
+                  {open && (
+                    <motion.div
+                      key="items"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mx-5 mb-5 rounded-xl border border-border overflow-hidden">
+                        <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${dot}`}/>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                            Line Items · {new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" })}
+                          </span>
+                        </div>
+                        <EntryItemsTable entryId={e.id} />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
