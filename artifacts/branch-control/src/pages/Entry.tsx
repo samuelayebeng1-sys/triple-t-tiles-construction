@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useListProducts, useGetStock, useCreateEntry, useCreateCredit, getListEntriesQueryKey, getGetStockQueryKey, getGetDashboardQueryKey, getListCreditsQueryKey, getGetCreditsSummaryQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { GHS, BRANCHES, PAYMENT_METHODS } from "@/lib/format";
-import { CheckCircle, Lock, Clock } from "lucide-react";
+import { CheckCircle, Lock, Clock, Undo2, Redo2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,6 +15,50 @@ interface EntryRow {
   paid: string;
 }
 
+/* ── Undo/redo hook ──────────────────────────────────── */
+const MAX_HISTORY = 50;
+
+function useUndoable<T>(initial: T) {
+  const [stack, setStack] = useState<T[]>([initial]);
+  const [idx, setIdx] = useState(0);
+
+  const current = stack[idx];
+  const canUndo = idx > 0;
+  const canRedo = idx < stack.length - 1;
+
+  const set = useCallback((next: T | ((prev: T) => T), skipHistory = false) => {
+    setStack(prev => {
+      const resolved = typeof next === "function" ? (next as (p: T) => T)(prev[idx]) : next;
+      if (skipHistory) {
+        const newStack = [...prev.slice(0, idx + 1)];
+        newStack[idx] = resolved;
+        return newStack;
+      }
+      const newStack = [...prev.slice(0, idx + 1), resolved];
+      return newStack.slice(-MAX_HISTORY);
+    });
+    if (!skipHistory) {
+      setIdx(i => Math.min(i + 1, MAX_HISTORY - 1));
+    }
+  }, [idx]);
+
+  const undo = useCallback(() => {
+    setIdx(i => Math.max(0, i - 1));
+  }, []);
+
+  const redo = useCallback(() => {
+    setIdx(i => Math.min(stack.length - 1, i + 1));
+  }, [stack.length]);
+
+  const reset = useCallback((value: T) => {
+    setStack([value]);
+    setIdx(0);
+  }, []);
+
+  return { current, set, undo, redo, reset, canUndo, canRedo, historySize: stack.length, historyIdx: idx };
+}
+
+/* ── Live clock ──────────────────────────────────────── */
 function LiveClock() {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
@@ -41,20 +85,41 @@ export default function Entry() {
   const [confirmed, setConfirmed] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
+  const initialized = useRef(false);
 
   const { data: products, isLoading: prodLoading } = useListProducts();
   const { data: stock } = useGetStock({ query: { queryKey: getGetStockQueryKey() } });
   const createEntry = useCreateEntry();
   const createCredit = useCreateCredit();
 
-  const [rows, setRows] = useState<EntryRow[]>([]);
-  const initialized = rows.length > 0;
+  const emptyRows = useCallback((): EntryRow[] =>
+    (products ?? []).map(p => ({ code: p.code, sold: "", pay: "Cash", customer: "", phone: "", paid: "" })),
+  [products]);
 
-  useMemo(() => {
-    if (products && !initialized) {
-      setRows(products.map(p => ({ code: p.code, sold: "", pay: "Cash", customer: "", phone: "", paid: "" })));
+  const {
+    current: rows, set: setRows, undo, redo, reset,
+    canUndo, canRedo, historyIdx,
+  } = useUndoable<EntryRow[]>([]);
+
+  /* Initialise rows once products load */
+  useEffect(() => {
+    if (products && !initialized.current) {
+      initialized.current = true;
+      reset(emptyRows());
     }
-  }, [products, initialized]);
+  }, [products, emptyRows, reset]);
+
+  /* Keyboard shortcuts: Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (!ctrl) return;
+      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.key === "y") || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
 
   function update(i: number, k: keyof EntryRow, v: string) {
     setRows(rs => rs.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
@@ -106,7 +171,6 @@ export default function Entry() {
         customerPhone: r.phone || null,
       }));
 
-    // Auto-create credit book entries for Credit and Split rows
     const creditRows = rows.filter(r => Number(r.sold) > 0 && (r.pay === "Credit" || r.pay === "Split") && r.customer);
     for (const row of creditRows) {
       const p = products?.find(p => p.code === row.code);
@@ -116,9 +180,7 @@ export default function Entry() {
       const paid = (r: EntryRow) => r.pay === "Split" ? Number(r.paid || 0) : 0;
       const balance = row.pay === "Credit" ? amount : Math.max(0, amount - paid(row));
       if (balance > 0) {
-        await createCredit.mutateAsync({
-          data: { name: row.customer, phone: row.phone || "", total: balance }
-        }).catch(() => {});
+        await createCredit.mutateAsync({ data: { name: row.customer, phone: row.phone || "", total: balance } }).catch(() => {});
       }
     }
 
@@ -130,7 +192,8 @@ export default function Entry() {
         qc.invalidateQueries({ queryKey: getListCreditsQueryKey() });
         qc.invalidateQueries({ queryKey: getGetCreditsSummaryQueryKey() });
         toast({ title: "Entry saved & locked", description: `${selectedBranch} entry locked. Credit entries auto-added.` });
-        setRows(products?.map(p => ({ code: p.code, sold: "", pay: "Cash", customer: "", phone: "", paid: "" })) ?? []);
+        const fresh = emptyRows();
+        reset(fresh);
         setConfirmed(false);
       },
       onError: () => {
@@ -152,7 +215,35 @@ export default function Entry() {
             <LiveClock />
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Undo / Redo buttons */}
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-sm">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted enabled:active:scale-95"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              Undo
+            </button>
+            <div className="h-4 w-px bg-border" />
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              title="Redo (Ctrl+Y)"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted enabled:active:scale-95"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+              Redo
+            </button>
+            {canUndo && (
+              <span className="ml-1 mr-2 text-[10px] text-muted-foreground font-bold tabular-nums">
+                {historyIdx} step{historyIdx !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
           <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Branch</span>
           {BRANCHES.map(b => (
             <button
@@ -276,9 +367,9 @@ export default function Entry() {
       <div className="grid gap-4 md:grid-cols-[1fr_340px]">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {[
-            { label: "Cash", value: GHS(totals.cash), color: "text-emerald-600" },
-            { label: "MoMo", value: GHS(totals.momo), color: "text-blue-600" },
-            { label: "Bank", value: GHS(totals.bank), color: "text-indigo-600" },
+            { label: "Cash",   value: GHS(totals.cash),   color: "text-emerald-600" },
+            { label: "MoMo",   value: GHS(totals.momo),   color: "text-blue-600" },
+            { label: "Bank",   value: GHS(totals.bank),   color: "text-indigo-600" },
             { label: "Credit", value: GHS(totals.credit), color: "text-red-600" },
             { label: "Profit", value: GHS(totals.profit), color: "text-purple-600" },
           ].map(({ label, value, color }) => (
