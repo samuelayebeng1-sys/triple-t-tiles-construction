@@ -16,6 +16,7 @@ export * from './delivery';
 export * from './deliveryInput';
 export * from './entry';
 export * from './entryInput';
+export * from './entryItem';
 export * from './entryLine';
 export * from './healthStatus';
 export * from './issue';

@@ -234,6 +234,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/Delivery"
 
+  /entries/{id}/items:
+    get:
+      operationId: getEntryItems
+      tags: [entries]
+      summary: Get line items for a specific entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Entry items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EntryItem"
+
   /entries:
     get:
       operationId: listEntries
@@ -695,6 +716,35 @@ components:
           type: string
         createdAt:
           type: string
+
+    EntryItem:
+      type: object
+      required: [id, entryId, productCode, productName, unit, price, cost, qty, amount, paymentMethod]
+      properties:
+        id:
+          type: integer
+        entryId:
+          type: integer
+        productCode:
+          type: string
+        productName:
+          type: string
+        unit:
+          type: string
+        price:
+          type: number
+        cost:
+          type: number
+        qty:
+          type: integer
+        amount:
+          type: number
+        paymentMethod:
+          type: string
+        customerName:
+          type: ["string", "null"]
+        customerPhone:
+          type: ["string", "null"]
 
     EntryLine:
       type: object

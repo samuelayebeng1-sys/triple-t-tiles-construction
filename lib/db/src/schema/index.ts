@@ -1,6 +1,7 @@
 export * from "./products";
 export * from "./stock";
 export * from "./entries";
+export * from "./entry-items";
 export * from "./credits";
 export * from "./issues";
 export * from "./settings";

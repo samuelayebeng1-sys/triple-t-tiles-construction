@@ -78,6 +78,23 @@ export interface Delivery {
   createdAt: string;
 }
 
+export interface EntryItem {
+  id: number;
+  entryId: number;
+  productCode: string;
+  productName: string;
+  unit: string;
+  price: number;
+  cost: number;
+  qty: number;
+  amount: number;
+  paymentMethod: string;
+  /** @nullable */
+  customerName?: string | null;
+  /** @nullable */
+  customerPhone?: string | null;
+}
+
 export interface EntryLine {
   productCode: string;
   quantitySold: number;

@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
-import { useListEntries } from "@workspace/api-client-react";
+import { useListEntries, useGetEntryItems } from "@workspace/api-client-react";
 import { GHS, pct, BRANCHES } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Table2, X, Download, CheckCircle2 } from "lucide-react";
+import {
+  ChevronDown, ChevronUp, FileText, Table2,
+  X, Download, CheckCircle2,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const PERIODS = ["Today", "This Week", "This Month", "All Time"] as const;
@@ -13,6 +16,14 @@ const BRANCH_COLORS: Record<string, string> = {
   Adenta:  "text-blue-600",
   Spintex: "text-purple-600",
   Kasoa:   "text-amber-600",
+};
+
+const PAY_COLORS: Record<string, string> = {
+  Cash:   "bg-emerald-100 text-emerald-700",
+  MoMo:   "bg-blue-100 text-blue-700",
+  Bank:   "bg-indigo-100 text-indigo-700",
+  Credit: "bg-red-100 text-red-700",
+  Split:  "bg-amber-100 text-amber-700",
 };
 
 function filterByPeriod(entries: any[], period: Period) {
@@ -27,6 +38,79 @@ function filterByPeriod(entries: any[], period: Period) {
     if (period === "This Month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     return true;
   });
+}
+
+/* ── Expandable items sub-table ────────────────────────── */
+function EntryItemsTable({ entryId }: { entryId: number }) {
+  const { data: items, isLoading } = useGetEntryItems(entryId);
+
+  if (isLoading) return (
+    <div className="p-4 space-y-2">
+      {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full rounded-lg"/>)}
+    </div>
+  );
+
+  if (!items || items.length === 0) return (
+    <div className="px-6 py-4 text-sm text-muted-foreground italic">
+      No line items recorded for this entry.
+    </div>
+  );
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="bg-muted/60 border-b border-border">
+            <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-muted-foreground">Code</th>
+            <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-muted-foreground">Product</th>
+            <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-muted-foreground">Price</th>
+            <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-muted-foreground">Qty Sold</th>
+            <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-muted-foreground">Amount</th>
+            <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-muted-foreground">Payment</th>
+            <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-muted-foreground">Customer</th>
+            <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-muted-foreground">Phone</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, i) => {
+            const profit = (item.price - item.cost) * item.qty;
+            return (
+              <tr key={item.id} className={`border-b border-border/50 ${i % 2 === 0 ? "" : "bg-muted/20"}`}>
+                <td className="px-4 py-2.5 font-mono font-bold text-muted-foreground">{item.productCode}</td>
+                <td className="px-4 py-2.5 font-bold text-foreground whitespace-nowrap">{item.productName}</td>
+                <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{GHS(item.price)} / {item.unit || "unit"}</td>
+                <td className="px-4 py-2.5 font-black text-foreground text-center">{item.qty}</td>
+                <td className="px-4 py-2.5 font-black text-foreground whitespace-nowrap">{GHS(item.amount)}</td>
+                <td className="px-4 py-2.5">
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${PAY_COLORS[item.paymentMethod] ?? "bg-muted text-muted-foreground"}`}>
+                    {item.paymentMethod}
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 text-muted-foreground">{item.customerName || <span className="text-muted-foreground/30">—</span>}</td>
+                <td className="px-4 py-2.5 text-muted-foreground">{item.customerPhone || <span className="text-muted-foreground/30">—</span>}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="border-t-2 border-primary/20 bg-primary/5">
+            <td className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground" colSpan={3}>
+              {items.length} line{items.length !== 1 ? "s" : ""}
+            </td>
+            <td className="px-4 py-2.5 font-black text-foreground text-center">
+              {items.reduce((s, it) => s + it.qty, 0)}
+            </td>
+            <td className="px-4 py-2.5 font-black text-foreground whitespace-nowrap">
+              {GHS(items.reduce((s, it) => s + it.amount, 0))}
+            </td>
+            <td colSpan={3} className="px-4 py-2.5 text-xs text-purple-600 font-bold">
+              Profit {GHS(items.reduce((s, it) => s + (it.price - it.cost) * it.qty, 0))}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
 }
 
 /* ── Export Modal ─────────────────────────────────────── */
@@ -144,8 +228,9 @@ function ExportModal({ type, entries, branchFilter, period, onClose }: {
 /* ── Page ─────────────────────────────────────────────── */
 export default function HistoryPage() {
   const { data: allEntries = [], isLoading } = useListEntries();
-  const [period, setPeriod]   = useState<Period>("This Month");
+  const [period, setPeriod]       = useState<Period>("This Month");
   const [branchFilter, setBranch] = useState("All");
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [exportModal, setExportModal] = useState<"pdf"|"excel"|null>(null);
 
   const filtered = useMemo(() => {
@@ -164,7 +249,7 @@ export default function HistoryPage() {
   const margin      = pct(totalProfit, totalSales);
 
   return (
-    <div className="p-6 space-y-5 max-w-5xl" data-testid="page-history">
+    <div className="p-6 space-y-5 max-w-6xl" data-testid="page-history">
 
       {exportModal && (
         <ExportModal
@@ -225,6 +310,7 @@ export default function HistoryPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/40">
+                  <th className="px-4 py-3 w-8"/>
                   <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">#</th>
                   <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Branch</th>
                   <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
@@ -241,41 +327,71 @@ export default function HistoryPage() {
               </thead>
               <tbody>
                 {filtered.map((e, i) => {
-                  const em = pct(e.totalProfit, e.totalAmount);
-                  const bc = BRANCH_COLORS[e.branch] ?? "text-foreground";
+                  const em   = pct(e.totalProfit, e.totalAmount);
+                  const bc   = BRANCH_COLORS[e.branch] ?? "text-foreground";
+                  const open = expandedId === e.id;
                   return (
-                    <tr key={e.id} className={`border-b border-border/50 ${i % 2 === 0 ? "" : "bg-muted/20"}`}>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{filtered.length - i}</td>
-                      <td className="px-4 py-3">
-                        <span className={`font-black text-sm ${bc}`}>{e.branch}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <p className="font-bold text-foreground">{new Date(e.createdAt).toLocaleDateString("en-GH", { day: "numeric", month: "short", year: "numeric" })}</p>
-                        <p className="text-[10px] text-muted-foreground">{new Date(e.createdAt).toLocaleTimeString("en-GH", { hour: "2-digit", minute: "2-digit" })}</p>
-                      </td>
-                      <td className="px-4 py-3 font-black text-foreground whitespace-nowrap">{GHS(e.totalAmount)}</td>
-                      <td className="px-4 py-3 font-bold text-emerald-600 whitespace-nowrap">{e.totalCash > 0 ? GHS(e.totalCash) : <span className="text-muted-foreground/30">—</span>}</td>
-                      <td className="px-4 py-3 font-bold text-blue-600 whitespace-nowrap">{e.totalMomo > 0 ? GHS(e.totalMomo) : <span className="text-muted-foreground/30">—</span>}</td>
-                      <td className="px-4 py-3 font-bold text-indigo-600 whitespace-nowrap">{(e.totalBank??0) > 0 ? GHS(e.totalBank) : <span className="text-muted-foreground/30">—</span>}</td>
-                      <td className="px-4 py-3 font-bold text-red-600 whitespace-nowrap">{e.totalCredit > 0 ? GHS(e.totalCredit) : <span className="text-muted-foreground/30">—</span>}</td>
-                      <td className="px-4 py-3 font-bold text-purple-600 whitespace-nowrap">{GHS(e.totalProfit)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`text-xs font-black px-2 py-0.5 rounded-full ${em >= 20 ? "bg-emerald-100 text-emerald-700" : em >= 10 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
-                          {em}%
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{e.itemsSold}</td>
-                      <td className="px-4 py-3">
-                        <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{e.status}</span>
-                      </td>
-                    </tr>
+                    <>
+                      <tr
+                        key={e.id}
+                        onClick={() => setExpandedId(open ? null : e.id)}
+                        className={`border-b border-border/50 cursor-pointer transition-colors ${open ? "bg-primary/5" : i % 2 === 0 ? "hover:bg-muted/30" : "bg-muted/10 hover:bg-muted/30"}`}
+                      >
+                        <td className="px-4 py-3">
+                          {open
+                            ? <ChevronUp className="h-4 w-4 text-primary"/>
+                            : <ChevronDown className="h-4 w-4 text-muted-foreground/40"/>}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">{filtered.length - i}</td>
+                        <td className="px-4 py-3">
+                          <span className={`font-black text-sm ${bc}`}>{e.branch}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <p className="font-bold text-foreground">{new Date(e.createdAt).toLocaleDateString("en-GH", { day: "numeric", month: "short", year: "numeric" })}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(e.createdAt).toLocaleTimeString("en-GH", { hour: "2-digit", minute: "2-digit" })}</p>
+                        </td>
+                        <td className="px-4 py-3 font-black text-foreground whitespace-nowrap">{GHS(e.totalAmount)}</td>
+                        <td className="px-4 py-3 font-bold text-emerald-600 whitespace-nowrap">{e.totalCash > 0 ? GHS(e.totalCash) : <span className="text-muted-foreground/30">—</span>}</td>
+                        <td className="px-4 py-3 font-bold text-blue-600 whitespace-nowrap">{e.totalMomo > 0 ? GHS(e.totalMomo) : <span className="text-muted-foreground/30">—</span>}</td>
+                        <td className="px-4 py-3 font-bold text-indigo-600 whitespace-nowrap">{(e.totalBank??0) > 0 ? GHS(e.totalBank) : <span className="text-muted-foreground/30">—</span>}</td>
+                        <td className="px-4 py-3 font-bold text-red-600 whitespace-nowrap">{e.totalCredit > 0 ? GHS(e.totalCredit) : <span className="text-muted-foreground/30">—</span>}</td>
+                        <td className="px-4 py-3 font-bold text-purple-600 whitespace-nowrap">{GHS(e.totalProfit)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`text-xs font-black px-2 py-0.5 rounded-full ${em >= 20 ? "bg-emerald-100 text-emerald-700" : em >= 10 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                            {em}%
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{e.itemsSold}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{e.status}</span>
+                        </td>
+                      </tr>
+
+                      {/* ── Expanded line items ── */}
+                      {open && (
+                        <tr key={`${e.id}-items`} className="border-b border-border bg-muted/5">
+                          <td colSpan={13} className="p-0">
+                            <div className="border-t border-border/60">
+                              <div className="px-4 py-2 bg-muted/30 flex items-center gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                  Line Items — {e.branch} · {new Date(e.createdAt).toLocaleDateString("en-GH", { dateStyle: "medium" })}
+                                </span>
+                              </div>
+                              <EntryItemsTable entryId={e.id} />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   );
                 })}
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-primary/20 bg-primary/5 font-black">
-                  <td className="px-4 py-3 text-muted-foreground text-xs" colSpan={3}>
-                    TOTAL · {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"} · {totalItems} items
+                  <td className="px-4 py-3" colSpan={4}>
+                    <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                      Totals · {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-foreground whitespace-nowrap">{GHS(totalSales)}</td>
                   <td className="px-4 py-3 text-emerald-600 whitespace-nowrap">{GHS(totalCash)}</td>
@@ -289,7 +405,7 @@ export default function HistoryPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-foreground">{totalItems}</td>
-                  <td className="px-4 py-3" />
+                  <td className="px-4 py-3"/>
                 </tr>
               </tfoot>
             </table>

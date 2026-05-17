@@ -161,6 +161,30 @@ export const CreateDeliveryBody = zod.object({
 
 
 /**
+ * @summary Get line items for a specific entry
+ */
+export const GetEntryItemsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetEntryItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "entryId": zod.number(),
+  "productCode": zod.string(),
+  "productName": zod.string(),
+  "unit": zod.string(),
+  "price": zod.number(),
+  "cost": zod.number(),
+  "qty": zod.number(),
+  "amount": zod.number(),
+  "paymentMethod": zod.string(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish()
+})
+export const GetEntryItemsResponse = zod.array(GetEntryItemsResponseItem)
+
+
+/**
  * @summary List all sales entries
  */
 export const ListEntriesResponseItem = zod.object({

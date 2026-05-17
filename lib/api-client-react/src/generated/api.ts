@@ -28,6 +28,7 @@ import type {
   DeliveryInput,
   Entry,
   EntryInput,
+  EntryItem,
   HealthStatus,
   Issue,
   Location,
@@ -936,6 +937,83 @@ export const useCreateDelivery = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateDeliveryMutationOptions(options));
     }
+
+export const getGetEntryItemsUrl = (id: number,) => {
+
+
+
+
+  return `/api/entries/${id}/items`
+}
+
+/**
+ * @summary Get line items for a specific entry
+ */
+export const getEntryItems = async (id: number, options?: RequestInit): Promise<EntryItem[]> => {
+
+  return customFetch<EntryItem[]>(getGetEntryItemsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEntryItemsQueryKey = (id: number,) => {
+    return [
+    `/api/entries/${id}/items`
+    ] as const;
+    }
+
+
+export const getGetEntryItemsQueryOptions = <TData = Awaited<ReturnType<typeof getEntryItems>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEntryItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEntryItemsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEntryItems>>> = ({ signal }) => getEntryItems(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEntryItems>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEntryItemsQueryResult = NonNullable<Awaited<ReturnType<typeof getEntryItems>>>
+export type GetEntryItemsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get line items for a specific entry
+ */
+
+export function useGetEntryItems<TData = Awaited<ReturnType<typeof getEntryItems>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEntryItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEntryItemsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListEntriesUrl = () => {
 
