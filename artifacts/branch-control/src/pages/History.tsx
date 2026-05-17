@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useListEntries, useGetEntryItems } from "@workspace/api-client-react";
 import { GHS, pct, BRANCHES } from "@/lib/format";
-import { exportPDF, exportExcel } from "@/lib/export";
+import { exportPDF, exportExcel, previewPDF, type ExportEntry } from "@/lib/export";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, ChevronUp, FileText, Table2, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, Table2, Loader2, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const PERIODS = ["Today", "This Week", "This Month", "All Time"] as const;
@@ -129,13 +129,97 @@ function EntryItemsTable({ entryId }: { entryId: number }) {
   );
 }
 
+/* ── PDF Preview Modal ────────────────────────────────── */
+function PdfPreviewModal({ entries, period, branchFilter, onClose }: {
+  entries: ExportEntry[]; period: string; branchFilter: string; onClose: () => void;
+}) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [saving, setSaving]   = useState(false);
+
+  useEffect(() => {
+    const url = previewPDF(entries, period, branchFilter);
+    setBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, []);
+
+  function handleSave() {
+    setSaving(true);
+    setTimeout(() => {
+      exportPDF(entries, period, branchFilter);
+      setSaving(false);
+      onClose();
+    }, 50);
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }} transition={{ type: "spring", bounce: 0.15 }}
+        onClick={e => e.stopPropagation()}
+        className="flex flex-col h-full max-w-6xl w-full mx-auto bg-card shadow-2xl rounded-t-none rounded-b-none overflow-hidden"
+        style={{ marginTop: "3vh", marginBottom: 0, borderRadius: "1.5rem 1.5rem 0 0" }}
+      >
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-red-100 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-red-600"/>
+            </div>
+            <div>
+              <p className="font-black text-sm text-foreground">PDF Preview</p>
+              <p className="text-xs text-muted-foreground">
+                {period} · {branchFilter === "All" ? "All Branches" : branchFilter} · {entries.length} entries
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-black hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin"/> : <Download className="h-4 w-4"/>}
+              Download PDF
+            </button>
+            <button onClick={onClose} className="rounded-xl bg-muted p-2.5 hover:bg-muted/70 transition-colors">
+              <X className="h-4 w-4"/>
+            </button>
+          </div>
+        </div>
+
+        {/* PDF iframe */}
+        <div className="flex-1 bg-muted/30 overflow-hidden">
+          {blobUrl ? (
+            <iframe
+              src={blobUrl}
+              className="w-full h-full border-0"
+              title="PDF Preview"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full gap-3 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin"/>
+              <span className="font-bold">Generating preview…</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ── Page ─────────────────────────────────────────────── */
 export default function HistoryPage() {
   const { data: allEntries = [], isLoading } = useListEntries();
   const [period, setPeriod]         = useState<Period>("This Month");
   const [branchFilter, setBranch]   = useState("All");
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [exporting, setExporting]   = useState<"pdf"|"excel"|null>(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [exporting, setExporting]           = useState(false);
 
   const filtered = useMemo(() => {
     const byPeriod = filterByPeriod(allEntries, period);
@@ -148,21 +232,23 @@ export default function HistoryPage() {
   const totalItems  = filtered.reduce((s,e) => s + e.itemsSold, 0);
   const margin      = pct(totalProfit, totalSales);
 
-  function handleExport(type: "pdf" | "excel") {
+  function handleExcel() {
     if (filtered.length === 0) return;
-    setExporting(type);
-    setTimeout(() => {
-      try {
-        if (type === "pdf") exportPDF(filtered, period, branchFilter);
-        else exportExcel(filtered, period, branchFilter);
-      } finally {
-        setExporting(null);
-      }
-    }, 50);
+    setExporting(true);
+    setTimeout(() => { exportExcel(filtered, period, branchFilter); setExporting(false); }, 50);
   }
 
   return (
     <div className="p-6 space-y-5 max-w-5xl" data-testid="page-history">
+
+      <AnimatePresence>
+        {showPdfPreview && (
+          <PdfPreviewModal
+            entries={filtered} period={period} branchFilter={branchFilter}
+            onClose={() => setShowPdfPreview(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -174,23 +260,19 @@ export default function HistoryPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => handleExport("pdf")}
-            disabled={exporting !== null || filtered.length === 0}
+            onClick={() => filtered.length > 0 && setShowPdfPreview(true)}
+            disabled={filtered.length === 0}
             className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all disabled:opacity-50"
           >
-            {exporting === "pdf"
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin"/>
-              : <FileText className="h-3.5 w-3.5 text-red-500"/>}
+            <FileText className="h-3.5 w-3.5 text-red-500"/>
             PDF
           </button>
           <button
-            onClick={() => handleExport("excel")}
-            disabled={exporting !== null || filtered.length === 0}
+            onClick={handleExcel}
+            disabled={exporting || filtered.length === 0}
             className="flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-bold text-foreground hover:bg-muted/70 transition-all disabled:opacity-50"
           >
-            {exporting === "excel"
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin"/>
-              : <Table2 className="h-3.5 w-3.5 text-emerald-500"/>}
+            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin"/> : <Table2 className="h-3.5 w-3.5 text-emerald-500"/>}
             Excel
           </button>
         </div>
