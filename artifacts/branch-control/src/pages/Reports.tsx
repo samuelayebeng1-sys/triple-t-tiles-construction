@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useListReports, useGetReportsSummary } from "@workspace/api-client-react";
 import { GHS, pct, BRANCHES } from "@/lib/format";
-import { previewReportPDF, exportReportPDF, exportReportExcel, getReportExcelPreviewData, type ReportEntry } from "@/lib/export";
+import { previewReportPDF, exportReportPDF, exportReportExcel, getReportExcelPreviewData, formatPeriodLabel, type ReportEntry } from "@/lib/export";
 import ExcelPreviewModal from "@/components/ExcelPreviewModal";
 import { FileText, Table2, Download, Loader2, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,7 +50,7 @@ function PdfPreviewModal({ reports, period, branchFilter, onClose }: {
               <div>
                 <p className="font-black text-sm text-foreground">PDF Preview</p>
                 <p className="text-xs text-muted-foreground">
-                  {period} · {branchFilter === "All" ? "All Branches" : branchFilter} · {reports.length} report{reports.length !== 1 ? "s" : ""}
+                  {formatPeriodLabel(period)} · {branchFilter === "All" ? "All Branches" : branchFilter} · {reports.length} report{reports.length !== 1 ? "s" : ""}
                 </p>
               </div>
             </div>

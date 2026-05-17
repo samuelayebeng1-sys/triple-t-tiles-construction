@@ -28,6 +28,45 @@ function slug() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Converts a period key into a human-readable specific date range.
+ * e.g. "Today" → "17 May 2026"
+ *      "This Week" → "12 – 17 May 2026"
+ *      "This Month" → "May 2026"
+ */
+export function formatPeriodLabel(period: string): string {
+  const now = new Date();
+  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    d.toLocaleDateString("en-GH", opts);
+
+  if (period === "Today") {
+    return fmt(now, { day: "numeric", month: "long", year: "numeric" });
+  }
+  if (period === "This Week") {
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay());
+    start.setHours(0, 0, 0, 0);
+    const sameMonth = start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear();
+    if (sameMonth) {
+      return (
+        fmt(start, { day: "numeric" }) + " – " +
+        fmt(now, { day: "numeric", month: "long", year: "numeric" })
+      );
+    }
+    return (
+      fmt(start, { day: "numeric", month: "short" }) + " – " +
+      fmt(now, { day: "numeric", month: "long", year: "numeric" })
+    );
+  }
+  if (period === "This Month") {
+    return fmt(now, { month: "long", year: "numeric" });
+  }
+  if (period === "This Year") {
+    return String(now.getFullYear());
+  }
+  return period; // "All Time" etc.
+}
+
 function pdfHeader(doc: jsPDF, title: string, subtitle: string, count: number) {
   const pageW = doc.internal.pageSize.getWidth();
   const co = companyName();
@@ -80,6 +119,21 @@ function pdfSummaryBoxes(doc: jsPDF, boxes: { label: string; value: string }[]) 
 /* ─────────────────────────────────────────────────────────
    HISTORY  (entries from Enter Book)
 ───────────────────────────────────────────────────────── */
+export interface EntryItem {
+  id: number;
+  entryId: number;
+  productCode: string;
+  productName: string;
+  unit: string;
+  price: number;
+  cost: number;
+  qty: number;
+  amount: number;
+  paymentMethod: string;
+  customerName: string | null;
+  customerPhone: string | null;
+}
+
 export interface ExportEntry {
   id: number;
   branch: string;
@@ -92,10 +146,12 @@ export interface ExportEntry {
   totalProfit: number;
   itemsSold: number;
   status: string;
+  items?: EntryItem[];
 }
 
 function buildHistoryPDF(entries: ExportEntry[], period: string, branchFilter: string): jsPDF {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const periodLabel = formatPeriodLabel(period);
   const totalSales  = entries.reduce((s, e) => s + e.totalAmount, 0);
   const totalProfit = entries.reduce((s, e) => s + e.totalProfit, 0);
   const totalCash   = entries.reduce((s, e) => s + e.totalCash, 0);
@@ -106,7 +162,7 @@ function buildHistoryPDF(entries: ExportEntry[], period: string, branchFilter: s
   const margin      = pct(totalProfit, totalSales);
 
   pdfHeader(doc, "Sales History Report",
-    "Period: " + period + "  |  Branch: " + (branchFilter === "All" ? "All Branches" : branchFilter),
+    periodLabel + "  |  " + (branchFilter === "All" ? "All Branches" : branchFilter),
     entries.length);
 
   pdfSummaryBoxes(doc, [
@@ -120,7 +176,7 @@ function buildHistoryPDF(entries: ExportEntry[], period: string, branchFilter: s
     { label: "ITEMS SOLD",   value: String(totalItems) },
   ]);
 
-  autoTable(doc, {
+  const mainTable = autoTable(doc, {
     startY: 45,
     head: [["#", "Branch", "Date", "Time", "Total Sales", "Cash", "MoMo", "Bank", "Credit", "Profit", "Margin", "Items", "Status"]],
     body: entries.map((e, i) => [
@@ -156,6 +212,74 @@ function buildHistoryPDF(entries: ExportEntry[], period: string, branchFilter: s
     margin: { left: 10, right: 10 },
   });
 
+  /* ── Line Items section ── */
+  const entriesWithItems = entries.filter(e => e.items && e.items.length > 0);
+  if (entriesWithItems.length > 0) {
+    const pageW = doc.internal.pageSize.getWidth();
+    let currentY = (mainTable as any).finalY + 10;
+
+    /* Section divider */
+    doc.setFillColor(15, 23, 42);
+    doc.rect(10, currentY, pageW - 20, 7, "F");
+    doc.setFontSize(7); doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text("DETAILED LINE ITEMS", 14, currentY + 4.5);
+    currentY += 11;
+
+    for (const entry of entriesWithItems) {
+      const items = entry.items!;
+      const entryTotal = items.reduce((s, it) => s + it.amount, 0);
+      const entryProfit = items.reduce((s, it) => s + (it.price - it.cost) * it.qty, 0);
+
+      /* Group header */
+      const dateLabel = new Date(entry.createdAt).toLocaleDateString("en-GH", {
+        day: "numeric", month: "long", year: "numeric",
+      }).toUpperCase();
+      const headerText = "LINE ITEMS  \u00B7  " + dateLabel + "  \u00B7  " + entry.branch.toUpperCase() +
+        "  \u00B7  " + items.length + " product" + (items.length !== 1 ? "s" : "");
+
+      doc.setFontSize(6.5); doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text(headerText, 10, currentY);
+      doc.setDrawColor(203, 213, 225);
+      doc.line(10, currentY + 1, pageW - 10, currentY + 1);
+      currentY += 4;
+
+      const itemTable = autoTable(doc, {
+        startY: currentY,
+        head: [["Code", "Product", "Price/Unit", "Qty", "Amount", "Payment", "Customer", "Phone"]],
+        body: items.map(it => [
+          it.productCode,
+          it.productName,
+          c(it.price) + "/" + (it.unit || "unit"),
+          it.qty,
+          c(it.amount),
+          it.paymentMethod,
+          it.customerName || "-",
+          it.customerPhone || "-",
+        ]),
+        foot: [[
+          "", "SUBTOTAL (" + items.length + ")",
+          "", items.reduce((s, it) => s + it.qty, 0),
+          c(entryTotal), "", "Profit: " + c(entryProfit), "",
+        ]],
+        styles:             { fontSize: 6.5, cellPadding: 1.8, font: "helvetica" },
+        headStyles:         { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold", fontSize: 6 },
+        footStyles:         { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: "bold", fontSize: 6 },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 18 }, 1: { cellWidth: 35, fontStyle: "bold" },
+          2: { cellWidth: 28 }, 3: { cellWidth: 10, halign: "center" },
+          4: { cellWidth: 26, fontStyle: "bold" }, 5: { cellWidth: 22 },
+          6: { cellWidth: 30 }, 7: { cellWidth: 28 },
+        },
+        margin: { left: 10, right: 10 },
+      });
+
+      currentY = (itemTable as any).finalY + 6;
+    }
+  }
+
   pdfFooters(doc);
   return doc;
 }
@@ -173,6 +297,7 @@ export function exportPDF(entries: ExportEntry[], period: string, branchFilter: 
 
 export function exportExcel(entries: ExportEntry[], period: string, branchFilter: string) {
   const company     = companyName();
+  const periodLabel = formatPeriodLabel(period);
   const totalSales  = entries.reduce((s, e) => s + e.totalAmount, 0);
   const totalProfit = entries.reduce((s, e) => s + e.totalProfit, 0);
   const totalCash   = entries.reduce((s, e) => s + e.totalCash, 0);
@@ -183,9 +308,10 @@ export function exportExcel(entries: ExportEntry[], period: string, branchFilter
   const margin      = pct(totalProfit, totalSales);
   const wb = XLSX.utils.book_new();
 
+  /* Summary sheet */
   const wsSummary = XLSX.utils.aoa_to_sheet([
     [company + " - Sales History Report"],
-    ["Period: " + period + "   |   Branch: " + (branchFilter === "All" ? "All Branches" : branchFilter) + "   |   Generated: " + todayStr()],
+    ["Period: " + periodLabel + "   |   Branch: " + (branchFilter === "All" ? "All Branches" : branchFilter) + "   |   Generated: " + todayStr()],
     [],
     ["SUMMARY"],
     ["Total Sales (GHS)",  totalSales], ["Total Profit (GHS)", totalProfit],
@@ -197,6 +323,7 @@ export function exportExcel(entries: ExportEntry[], period: string, branchFilter
   wsSummary["!cols"] = [{ wch: 24 }, { wch: 18 }];
   XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
 
+  /* Sales Entries sheet */
   const headers = ["#", "Branch", "Date", "Time", "Total Sales (GHS)", "Cash (GHS)", "MoMo (GHS)", "Bank (GHS)", "Credit (GHS)", "Profit (GHS)", "Margin %", "Items Sold", "Status"];
   const wsEntries = XLSX.utils.aoa_to_sheet([
     headers,
@@ -210,13 +337,41 @@ export function exportExcel(entries: ExportEntry[], period: string, branchFilter
   wsEntries["!cols"] = [{ wch: 5 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 18 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 10 }];
   XLSX.utils.book_append_sheet(wb, wsEntries, "Sales Entries");
 
+  /* Line Items sheet */
+  const allItems: any[][] = [];
+  const liHeaders = ["Entry #", "Branch", "Date", "Code", "Product", "Unit", "Price (GHS)", "Cost (GHS)", "Qty", "Amount (GHS)", "Profit (GHS)", "Payment", "Customer", "Phone"];
+  allItems.push(liHeaders);
+  entries.forEach((e, ei) => {
+    if (e.items && e.items.length > 0) {
+      e.items.forEach(it => {
+        allItems.push([
+          entries.length - ei, e.branch, fmtDate(e.createdAt),
+          it.productCode, it.productName, it.unit || "unit",
+          it.price, it.cost, it.qty, it.amount,
+          (it.price - it.cost) * it.qty,
+          it.paymentMethod,
+          it.customerName || "", it.customerPhone || "",
+        ]);
+      });
+    }
+  });
+  if (allItems.length > 1) {
+    const wsItems = XLSX.utils.aoa_to_sheet(allItems);
+    wsItems["!cols"] = [
+      { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 28 },
+      { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 6 }, { wch: 14 },
+      { wch: 14 }, { wch: 12 }, { wch: 22 }, { wch: 16 },
+    ];
+    XLSX.utils.book_append_sheet(wb, wsItems, "Line Items");
+  }
+
   const fname = company + "_SalesHistory_" + period.replace(/\s+/g, "_") + "_" + slug() + ".xlsx";
   XLSX.writeFile(wb, fname);
   return fname;
 }
 
-/** Returns data rows for Excel preview rendering */
 export function getExcelPreviewData(entries: ExportEntry[], period: string, branchFilter: string) {
+  const periodLabel = formatPeriodLabel(period);
   const totalSales  = entries.reduce((s, e) => s + e.totalAmount, 0);
   const totalProfit = entries.reduce((s, e) => s + e.totalProfit, 0);
   const totalCash   = entries.reduce((s, e) => s + e.totalCash, 0);
@@ -224,8 +379,10 @@ export function getExcelPreviewData(entries: ExportEntry[], period: string, bran
   const totalBank   = entries.reduce((s, e) => s + (e.totalBank ?? 0), 0);
   const totalCredit = entries.reduce((s, e) => s + e.totalCredit, 0);
   const totalItems  = entries.reduce((s, e) => s + e.itemsSold, 0);
+  const totalLineItems = entries.reduce((s, e) => s + (e.items?.length ?? 0), 0);
+
   return {
-    company: companyName(), period, branchFilter,
+    company: companyName(), period, periodLabel, branchFilter,
     summary: { totalSales, totalProfit, totalCash, totalMomo, totalBank, totalCredit, totalItems, margin: pct(totalProfit, totalSales) },
     headers: ["#", "Branch", "Date", "Time", "Total Sales", "Cash", "MoMo", "Bank", "Credit", "Profit", "Margin %", "Items", "Status"],
     rows: entries.map((e, i) => [
@@ -239,6 +396,8 @@ export function getExcelPreviewData(entries: ExportEntry[], period: string, bran
       String(e.itemsSold), e.status,
     ]),
     totalsRow: ["", "TOTAL (" + entries.length + ")", "", "", c(totalSales), c(totalCash), c(totalMomo), c(totalBank), c(totalCredit), c(totalProfit), pct(totalProfit, totalSales) + "%", String(totalItems), ""],
+    lineItemsCount: totalLineItems,
+    lineItemsSheets: totalLineItems > 0,
   };
 }
 
@@ -261,6 +420,7 @@ export interface ReportEntry {
 
 function buildReportPDF(reports: ReportEntry[], period: string, branchFilter: string): jsPDF {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const periodLabel = formatPeriodLabel(period);
   const totalSales  = reports.reduce((s, r) => s + r.total, 0);
   const totalProfit = reports.reduce((s, r) => s + r.profit, 0);
   const totalCash   = reports.reduce((s, r) => s + r.cash, 0);
@@ -271,7 +431,7 @@ function buildReportPDF(reports: ReportEntry[], period: string, branchFilter: st
   const margin      = pct(totalProfit, totalSales);
 
   pdfHeader(doc, "Sales Report",
-    "Period: " + period + "  |  Branch: " + (branchFilter === "All" ? "All Branches" : branchFilter),
+    periodLabel + "  |  " + (branchFilter === "All" ? "All Branches" : branchFilter),
     reports.length);
 
   pdfSummaryBoxes(doc, [
@@ -291,9 +451,9 @@ function buildReportPDF(reports: ReportEntry[], period: string, branchFilter: st
     body: reports.map((r, i) => [
       reports.length - i, r.branch, r.date,
       c(r.total),
-      r.cash > 0   ? c(r.cash)   : "-",
-      r.momo > 0   ? c(r.momo)   : "-",
-      r.bank > 0   ? c(r.bank)   : "-",
+      r.cash   > 0 ? c(r.cash)   : "-",
+      r.momo   > 0 ? c(r.momo)   : "-",
+      r.bank   > 0 ? c(r.bank)   : "-",
       r.credit > 0 ? c(r.credit) : "-",
       c(r.profit), pct(r.profit, r.total) + "%",
       r.itemsSold, r.status,
@@ -337,6 +497,7 @@ export function exportReportPDF(reports: ReportEntry[], period: string, branchFi
 
 export function exportReportExcel(reports: ReportEntry[], period: string, branchFilter: string) {
   const company     = companyName();
+  const periodLabel = formatPeriodLabel(period);
   const totalSales  = reports.reduce((s, r) => s + r.total, 0);
   const totalProfit = reports.reduce((s, r) => s + r.profit, 0);
   const totalCash   = reports.reduce((s, r) => s + r.cash, 0);
@@ -349,7 +510,7 @@ export function exportReportExcel(reports: ReportEntry[], period: string, branch
 
   const wsSummary = XLSX.utils.aoa_to_sheet([
     [company + " - Sales Report"],
-    ["Period: " + period + "   |   Branch: " + (branchFilter === "All" ? "All Branches" : branchFilter) + "   |   Generated: " + todayStr()],
+    ["Period: " + periodLabel + "   |   Branch: " + (branchFilter === "All" ? "All Branches" : branchFilter) + "   |   Generated: " + todayStr()],
     [],
     ["SUMMARY"],
     ["Total Sales (GHS)",  totalSales], ["Total Profit (GHS)", totalProfit],
@@ -380,6 +541,7 @@ export function exportReportExcel(reports: ReportEntry[], period: string, branch
 }
 
 export function getReportExcelPreviewData(reports: ReportEntry[], period: string, branchFilter: string) {
+  const periodLabel = formatPeriodLabel(period);
   const totalSales  = reports.reduce((s, r) => s + r.total, 0);
   const totalProfit = reports.reduce((s, r) => s + r.profit, 0);
   const totalCash   = reports.reduce((s, r) => s + r.cash, 0);
@@ -388,7 +550,7 @@ export function getReportExcelPreviewData(reports: ReportEntry[], period: string
   const totalCredit = reports.reduce((s, r) => s + r.credit, 0);
   const totalItems  = reports.reduce((s, r) => s + r.itemsSold, 0);
   return {
-    company: companyName(), period, branchFilter,
+    company: companyName(), period, periodLabel, branchFilter,
     summary: { totalSales, totalProfit, totalCash, totalMomo, totalBank, totalCredit, totalItems, margin: pct(totalProfit, totalSales) },
     headers: ["#", "Branch", "Date", "Total Sales", "Cash", "MoMo", "Bank", "Credit", "Profit", "Margin %", "Items", "Status"],
     rows: reports.map((r, i) => [
@@ -402,5 +564,7 @@ export function getReportExcelPreviewData(reports: ReportEntry[], period: string
       String(r.itemsSold), r.status,
     ]),
     totalsRow: ["", "TOTAL (" + reports.length + ")", "", c(totalSales), c(totalCash), c(totalMomo), c(totalBank), c(totalCredit), c(totalProfit), pct(totalProfit, totalSales) + "%", String(totalItems), ""],
+    lineItemsCount: 0,
+    lineItemsSheets: false,
   };
 }

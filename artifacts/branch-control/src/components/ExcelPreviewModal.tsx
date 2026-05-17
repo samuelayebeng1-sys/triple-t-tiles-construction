@@ -1,10 +1,11 @@
-import { X, Download, Table2, Loader2 } from "lucide-react";
+import { X, Download, Table2, Loader2, Layers } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 export interface ExcelPreviewData {
   company: string;
   period: string;
+  periodLabel: string;
   branchFilter: string;
   summary: {
     totalSales: number; totalProfit: number;
@@ -15,6 +16,8 @@ export interface ExcelPreviewData {
   headers: string[];
   rows: string[][];
   totalsRow: string[];
+  lineItemsCount: number;
+  lineItemsSheets: boolean;
 }
 
 interface Props {
@@ -60,7 +63,7 @@ export default function ExcelPreviewModal({ data, filename, onDownload, onClose 
               <div>
                 <p className="font-black text-sm text-foreground">Excel Preview</p>
                 <p className="text-xs text-muted-foreground">
-                  {data.period} · {data.branchFilter === "All" ? "All Branches" : data.branchFilter} · {data.rows.length} records
+                  {data.periodLabel} · {data.branchFilter === "All" ? "All Branches" : data.branchFilter} · {data.rows.length} records
                 </p>
               </div>
             </div>
@@ -96,8 +99,14 @@ export default function ExcelPreviewModal({ data, filename, onDownload, onClose 
                 Summary
               </div>
               <div className="bg-gray-50 border border-gray-200 border-b-0 rounded-t px-4 py-1 text-[10px] text-gray-400">
-                {data.period.includes("Report") ? "Reports" : "Sales Entries"}
+                Sales Entries
               </div>
+              {data.lineItemsSheets && (
+                <div className="bg-gray-50 border border-gray-200 border-b-0 rounded-t px-4 py-1 text-[10px] text-gray-400 flex items-center gap-1">
+                  <Layers className="h-2.5 w-2.5"/>
+                  Line Items
+                </div>
+              )}
             </div>
 
             {/* Summary KPIs */}
@@ -120,15 +129,21 @@ export default function ExcelPreviewModal({ data, filename, onDownload, onClose 
             </div>
 
             {/* Meta */}
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 text-[9px] text-gray-400">
-              {data.company} · {data.period} · {data.branchFilter === "All" ? "All Branches" : data.branchFilter} · Generated {new Date().toLocaleDateString("en-GH", { dateStyle: "long" })}
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between text-[9px] text-gray-400">
+              <span>{data.company} · {data.periodLabel} · {data.branchFilter === "All" ? "All Branches" : data.branchFilter} · Generated {new Date().toLocaleDateString("en-GH", { dateStyle: "long" })}</span>
+              {data.lineItemsSheets && (
+                <span className="flex items-center gap-1 text-[#1d6f42] font-bold">
+                  <Layers className="h-3 w-3"/>
+                  Line Items sheet included ({data.lineItemsCount} items)
+                </span>
+              )}
             </div>
 
             {/* Data table */}
             <div className="overflow-x-auto">
               <table className="w-full border-collapse min-w-max">
                 <thead>
-                  <tr className="bg-[#1d6f42] sticky top-0">
+                  <tr className="bg-[#1d6f42]">
                     {data.headers.map(h => (
                       <th key={h} className="px-3 py-2 text-left text-[9px] font-black text-white border-r border-white/10 last:border-0 whitespace-nowrap">
                         {h}
