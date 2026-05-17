@@ -46,18 +46,29 @@ router.post("/settings/sms/test", async (_req, res): Promise<void> => {
     return;
   }
 
-  const result = await sendSms({
-    to: numbers,
-    senderId: settings.smsSenderId,
-    message: `Test SMS from ${settings.companyName || "BranchControl"}. If you received this, your SMS alerts are working.`,
-  });
+  const message = `Test SMS from ${settings.companyName || "BranchControl"}. If you received this, your SMS alerts are working.`;
+
+  let result = await sendSms({ to: numbers, senderId: settings.smsSenderId, message });
+
+  // If the configured Sender ID isn't approved by Africa's Talking, retry with the default shortcode
+  // so the user still gets a working test instead of a failure they can't act on.
+  let usedDefaultSender = false;
+  if (!result.ok && /InvalidSenderId/i.test(result.error ?? "")) {
+    result = await sendSms({ to: numbers, message });
+    usedDefaultSender = true;
+  }
 
   if (!result.ok) {
     res.status(502).json({ ok: false, error: result.error, attempted: numbers.length });
     return;
   }
 
-  res.json({ ok: true, sent: result.recipients ?? numbers.length, attempted: numbers.length });
+  res.json({
+    ok: true,
+    sent: result.recipients ?? numbers.length,
+    attempted: numbers.length,
+    usedDefaultSender,
+  });
 });
 
 export default router;
