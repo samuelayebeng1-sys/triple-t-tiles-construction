@@ -831,54 +831,55 @@ export default function Settings() {
             <p className="text-sm text-muted-foreground">Manage your business, products, notifications and appearance</p>
           </div>
 
-          <div className="max-w-3xl space-y-10">
-            {SETTINGS_GROUPS.map(group => (
-              <div key={group.label}>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4 px-0.5">{group.label}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {group.items.map(({ id, icon: Icon, title, desc, count, accent }) => (
-                    <button
-                      key={id}
-                      onClick={() => setPage(id)}
-                      className="relative rounded-2xl border border-border bg-card shadow-sm text-left overflow-hidden hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 group"
+          <div className="max-w-5xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {NAV_TILES.map(({ id, icon: Icon, title, desc, count, accent }) => (
+              <button
+                key={id}
+                onClick={() => setPage(id)}
+                className="relative rounded-2xl border border-border bg-card text-left p-5 hover:border-foreground/20 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 group overflow-hidden"
+              >
+                {/* Soft accent glow in the corner */}
+                <div
+                  className="absolute -top-12 -right-12 h-32 w-32 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-2xl"
+                  style={{ background: accent }}
+                />
+
+                <div className="relative">
+                  {/* Top row: icon + optional count */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div
+                      className="h-11 w-11 rounded-xl flex items-center justify-center ring-1 ring-inset"
+                      style={{
+                        background: accent + "14",
+                        // @ts-ignore — CSS custom prop
+                        "--tw-ring-color": accent + "30",
+                      } as React.CSSProperties}
                     >
-                      {/* Coloured top stripe */}
-                      <div className="h-1 w-full" style={{ background: accent }} />
+                      <Icon className="h-5 w-5" style={{ color: accent }} strokeWidth={2.25} />
+                    </div>
+                    {count !== null && (
+                      <span
+                        className="text-[11px] font-black rounded-md px-2 py-0.5 tabular-nums"
+                        style={{ background: accent + "14", color: accent }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </div>
 
-                      <div className="p-5">
-                        {/* Icon + count row */}
-                        <div className="flex items-start justify-between mb-4">
-                          <div
-                            className="h-12 w-12 rounded-2xl flex items-center justify-center"
-                            style={{ background: accent + "15" }}
-                          >
-                            <Icon className="h-6 w-6" style={{ color: accent }} />
-                          </div>
-                          {count !== null && (
-                            <span
-                              className="text-xs font-black rounded-full px-2.5 py-1 tabular-nums"
-                              style={{ background: accent + "15", color: accent }}
-                            >
-                              {count}
-                            </span>
-                          )}
-                        </div>
+                  {/* Title + description */}
+                  <p className="font-black text-foreground text-[15px] leading-tight tracking-tight">{title}</p>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed line-clamp-2">{desc}</p>
 
-                        {/* Title + desc */}
-                        <p className="font-black text-foreground text-sm leading-tight">{title}</p>
-                        <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{desc}</p>
-
-                        {/* Arrow */}
-                        <div className="mt-4 flex justify-end">
-                          <ChevronRight
-                            className="h-4 w-4 text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-0.5 transition-all"
-                          />
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                  {/* Subtle "open" affordance */}
+                  <div className="mt-4 inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: accent }}
+                  >
+                    Open
+                    <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </>
