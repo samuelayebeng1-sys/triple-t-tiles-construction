@@ -514,8 +514,72 @@ export default function Settings() {
                       <input data-testid="input-company-name" value={profile.companyName} onChange={e => setProfile(f => ({ ...f, companyName: e.target.value }))} className={inputClass} placeholder="e.g. Aseda Building Materials" />
                     </div>
                     <div>
-                      <label className={labelClass}>Business Phone</label>
-                      <input data-testid="input-business-phone" value={profile.phone} onChange={e => setProfile(f => ({ ...f, phone: e.target.value }))} className={inputClass} placeholder="030 XXX XXXX" />
+                      <label className={labelClass}>Business Phone (primary)</label>
+                      <input data-testid="input-business-phone" value={profile.phone} onChange={e => setProfile(f => ({ ...f, phone: e.target.value }))} className={inputClass} placeholder="+233244000000" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className={labelClass + " mb-0"}>Additional Numbers</label>
+                        <span className="text-[10px] font-black text-muted-foreground tabular-nums">{profile.smsRecipients.length} added</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Extra numbers that will also receive SMS alerts. Include country code (e.g. <span className="font-semibold">+233244000000</span>). The primary number above is included automatically.
+                      </p>
+
+                      {profile.smsRecipients.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {profile.smsRecipients.map((num, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary pl-3 pr-1 py-1 text-xs font-black tabular-nums"
+                            >
+                              {num}
+                              <button
+                                type="button"
+                                onClick={() => setProfile(f => ({ ...f, smsRecipients: f.smsRecipients.filter((_, i) => i !== idx) }))}
+                                className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center transition-colors"
+                                aria-label={`Remove ${num}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <input
+                          type="tel"
+                          placeholder="+233244000000"
+                          className={inputClass + " flex-1"}
+                          id="sms-recipient-input"
+                          onKeyDown={e => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const val = (e.target as HTMLInputElement).value.trim();
+                              if (val && !profile.smsRecipients.includes(val)) {
+                                setProfile(f => ({ ...f, smsRecipients: [...f.smsRecipients, val] }));
+                                (e.target as HTMLInputElement).value = "";
+                              }
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const el = document.getElementById("sms-recipient-input") as HTMLInputElement | null;
+                            if (!el) return;
+                            const val = el.value.trim();
+                            if (val && !profile.smsRecipients.includes(val)) {
+                              setProfile(f => ({ ...f, smsRecipients: [...f.smsRecipients, val] }));
+                              el.value = "";
+                            }
+                          }}
+                          className="rounded-xl bg-primary text-primary-foreground px-4 text-sm font-black hover:opacity-90 transition-opacity"
+                        >
+                          Add
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -561,72 +625,8 @@ export default function Settings() {
                     )}
                   </div>
                 ))}
-                <div className="rounded-xl bg-muted/40 p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className={labelClass + " mb-0"}>Recipient Numbers</label>
-                    <span className="text-[10px] font-black text-muted-foreground tabular-nums">{profile.smsRecipients.length} added</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Numbers that will receive SMS alerts. Include country code (e.g. <span className="font-semibold">+233244000000</span>).
-                    The owner number from Business Profile is included automatically.
-                  </p>
-
-                  {/* Chips */}
-                  {profile.smsRecipients.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {profile.smsRecipients.map((num, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary pl-3 pr-1 py-1 text-xs font-black tabular-nums"
-                        >
-                          {num}
-                          <button
-                            type="button"
-                            onClick={() => setProfile(f => ({ ...f, smsRecipients: f.smsRecipients.filter((_, i) => i !== idx) }))}
-                            className="h-5 w-5 rounded-full hover:bg-primary/20 flex items-center justify-center transition-colors"
-                            aria-label={`Remove ${num}`}
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Add input */}
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      placeholder="+233244000000"
-                      className={inputClass + " flex-1"}
-                      onKeyDown={e => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          const val = (e.target as HTMLInputElement).value.trim();
-                          if (val && !profile.smsRecipients.includes(val)) {
-                            setProfile(f => ({ ...f, smsRecipients: [...f.smsRecipients, val] }));
-                            (e.target as HTMLInputElement).value = "";
-                          }
-                        }
-                      }}
-                      id="sms-recipient-input"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const el = document.getElementById("sms-recipient-input") as HTMLInputElement | null;
-                        if (!el) return;
-                        const val = el.value.trim();
-                        if (val && !profile.smsRecipients.includes(val)) {
-                          setProfile(f => ({ ...f, smsRecipients: [...f.smsRecipients, val] }));
-                          el.value = "";
-                        }
-                      }}
-                      className="rounded-xl bg-primary text-primary-foreground px-4 text-sm font-black hover:opacity-90 transition-opacity"
-                    >
-                      Add
-                    </button>
-                  </div>
+                <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+                  Manage which phone numbers receive these alerts in <span className="font-bold text-foreground">Business Profile → Additional Numbers</span>.
                 </div>
 
                 <div>
