@@ -813,33 +813,50 @@ export default function Settings() {
             <p className="text-sm text-muted-foreground">Manage your business, products, notifications and appearance</p>
           </div>
 
-          <div className="max-w-2xl space-y-8">
+          <div className="max-w-3xl space-y-10">
             {SETTINGS_GROUPS.map(group => (
               <div key={group.label}>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 px-1">{group.label}</p>
-                <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-                  {group.items.map(({ id, icon: Icon, title, desc, count, accent }, idx) => (
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4 px-0.5">{group.label}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {group.items.map(({ id, icon: Icon, title, desc, count, accent }) => (
                     <button
                       key={id}
                       onClick={() => setPage(id)}
-                      className={`w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/40 active:bg-muted/60 transition-colors group ${idx < group.items.length - 1 ? "border-b border-border/60" : ""}`}
+                      className="relative rounded-2xl border border-border bg-card shadow-sm text-left overflow-hidden hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 group"
                     >
-                      <div
-                        className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ background: accent + "18" }}
-                      >
-                        <Icon className="h-4.5 w-4.5" style={{ color: accent }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-black text-foreground text-sm">{title}</p>
+                      {/* Coloured top stripe */}
+                      <div className="h-1 w-full" style={{ background: accent }} />
+
+                      <div className="p-5">
+                        {/* Icon + count row */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div
+                            className="h-12 w-12 rounded-2xl flex items-center justify-center"
+                            style={{ background: accent + "15" }}
+                          >
+                            <Icon className="h-6 w-6" style={{ color: accent }} />
+                          </div>
                           {count !== null && (
-                            <span className="text-[10px] font-black rounded-full px-2 py-0.5 bg-muted text-muted-foreground tabular-nums">{count}</span>
+                            <span
+                              className="text-xs font-black rounded-full px-2.5 py-1 tabular-nums"
+                              style={{ background: accent + "15", color: accent }}
+                            >
+                              {count}
+                            </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+
+                        {/* Title + desc */}
+                        <p className="font-black text-foreground text-sm leading-tight">{title}</p>
+                        <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{desc}</p>
+
+                        {/* Arrow */}
+                        <div className="mt-4 flex justify-end">
+                          <ChevronRight
+                            className="h-4 w-4 text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-0.5 transition-all"
+                          />
+                        </div>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
                     </button>
                   ))}
                 </div>
