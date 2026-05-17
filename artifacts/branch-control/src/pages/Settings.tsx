@@ -228,6 +228,7 @@ export default function Settings() {
   const [locationForm, setLocationForm] = useState({ ...BLANK_LOC });
   const [editingLocation, setEditingLocation] = useState<number | null>(null);
   const [stockMap, setStockMap] = useState<Record<string, Record<string, string>>>({});
+  const [testingSms, setTestingSms] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -634,10 +635,38 @@ export default function Settings() {
                   <input value={profile.smsSenderId} onChange={e => setProfile(f => ({ ...f, smsSenderId: e.target.value.toUpperCase().slice(0, 11) }))} className={inputClass} placeholder="BRANCHCTRL" maxLength={11} />
                   <p className="text-xs text-muted-foreground mt-1">Max 11 characters, letters and numbers only. Must be pre-registered with Africa's Talking.</p>
                 </div>
-                <button onClick={handleSaveProfile} disabled={updateSettings.isPending}
-                  className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
-                  <Save className="h-4 w-4" /> Save SMS Settings
-                </button>
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <button onClick={handleSaveProfile} disabled={updateSettings.isPending}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50">
+                    <Save className="h-4 w-4" /> Save SMS Settings
+                  </button>
+                  <button
+                    type="button"
+                    disabled={testingSms}
+                    onClick={async () => {
+                      setTestingSms(true);
+                      try {
+                        const res = await fetch(`${import.meta.env.BASE_URL}api/settings/sms/test`, { method: "POST" });
+                        const data = await res.json().catch(() => ({}));
+                        if (res.ok && data.ok) {
+                          toast({ title: "Test SMS sent", description: `Delivered to ${data.sent} of ${data.attempted} number(s). Check your phone.` });
+                        } else {
+                          toast({ title: "Test SMS failed", description: data.error || `HTTP ${res.status}`, variant: "destructive" });
+                        }
+                      } catch (err) {
+                        toast({ title: "Test SMS failed", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+                      } finally {
+                        setTestingSms(false);
+                      }
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-black hover:bg-muted transition-all disabled:opacity-50"
+                  >
+                    <MessageSquare className="h-4 w-4" /> {testingSms ? "Sending..." : "Send Test SMS"}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sends a test message to your primary phone and all additional numbers. Save any changes first.
+                </p>
               </div>
             )}
 

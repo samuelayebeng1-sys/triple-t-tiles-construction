@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, settingsTable } from "@workspace/db";
 import { GetSettingsResponse, UpdateSettingsBody, UpdateSettingsResponse } from "@workspace/api-zod";
 import { eq } from "drizzle-orm";
+import { sendSms } from "../lib/sms.js";
 
 const router: IRouter = Router();
 
@@ -32,6 +33,31 @@ router.put("/settings", async (req, res): Promise<void> => {
     .returning();
 
   res.json(UpdateSettingsResponse.parse(updated));
+});
+
+router.post("/settings/sms/test", async (_req, res): Promise<void> => {
+  const settings = await getOrCreateSettings();
+  const numbers = [settings.phone, ...(settings.smsRecipients ?? [])]
+    .map(n => (n ?? "").trim())
+    .filter(Boolean);
+
+  if (numbers.length === 0) {
+    res.status(400).json({ ok: false, error: "No phone numbers configured. Add a primary phone in Business Profile first." });
+    return;
+  }
+
+  const result = await sendSms({
+    to: numbers,
+    senderId: settings.smsSenderId,
+    message: `Test SMS from ${settings.companyName || "BranchControl"}. If you received this, your SMS alerts are working.`,
+  });
+
+  if (!result.ok) {
+    res.status(502).json({ ok: false, error: result.error, attempted: numbers.length });
+    return;
+  }
+
+  res.json({ ok: true, sent: result.recipients ?? numbers.length, attempted: numbers.length });
 });
 
 export default router;
