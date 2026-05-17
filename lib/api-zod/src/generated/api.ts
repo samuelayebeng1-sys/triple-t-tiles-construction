@@ -495,7 +495,10 @@ export const GetSettingsResponse = zod.object({
   "smsDaily": zod.boolean(),
   "smsDailyTime": zod.string(),
   "smsRecipients": zod.array(zod.string()),
-  "smsSenderId": zod.string()
+  "smsSenderId": zod.string(),
+  "emailEnabled": zod.boolean(),
+  "emailThreshold": zod.number(),
+  "emailRecipients": zod.array(zod.string())
 })
 
 
@@ -519,7 +522,10 @@ export const UpdateSettingsBody = zod.object({
   "smsDaily": zod.boolean().optional(),
   "smsDailyTime": zod.string().optional(),
   "smsRecipients": zod.array(zod.string()).optional(),
-  "smsSenderId": zod.string().optional()
+  "smsSenderId": zod.string().optional(),
+  "emailEnabled": zod.boolean().optional(),
+  "emailThreshold": zod.number().optional(),
+  "emailRecipients": zod.array(zod.string()).optional()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -539,7 +545,10 @@ export const UpdateSettingsResponse = zod.object({
   "smsDaily": zod.boolean(),
   "smsDailyTime": zod.string(),
   "smsRecipients": zod.array(zod.string()),
-  "smsSenderId": zod.string()
+  "smsSenderId": zod.string(),
+  "emailEnabled": zod.boolean(),
+  "emailThreshold": zod.number(),
+  "emailRecipients": zod.array(zod.string())
 })
 
 
